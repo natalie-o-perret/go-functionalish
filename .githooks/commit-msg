@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Validates commit messages follow conventional commits format.
+# Types: feat fix docs style refactor perf test build ci chore revert
+
+commit_msg_file="$1"
+commit_msg=$(head -1 "$commit_msg_file")
+
+pattern="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?: .{1,}"
+
+if ! echo "$commit_msg" | grep -qE "$pattern"; then
+    echo ""
+    echo "BAD COMMIT MESSAGE:"
+    echo "  $commit_msg"
+    echo ""
+    echo "Must match: type(scope?): description"
+    echo "Types: feat fix docs style refactor perf test build ci chore revert"
+    echo ""
+    echo "Examples:"
+    echo "  feat: add Zip to enum package"
+    echo "  fix(option): handle nil in UnwrapOr"
+    echo "  docs: update README examples"
+    echo ""
+    exit 1
+fi
+
