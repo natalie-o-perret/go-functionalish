@@ -1,7 +1,11 @@
 # gof: Go Functional
 
-A cohesive, opinionated, type-safe functional programming library for Go 1.23+.  
-Inspired by C# LINQ, F# sequences, Option, Result**.  
+[![CI](https://github.com/natalie-o-perret/gof/actions/workflows/ci.yml/badge.svg)](https://github.com/natalie-o-perret/gof/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/natalie-o-perret/gof.svg)](https://pkg.go.dev/github.com/natalie-o-perret/gof)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+A cohesive, opinionated, type-safe functional programming library for Go 1.24+.  
+Inspired by C# LINQ, F# sequences, Option, Result.  
 No reflection. No `interface{}`. Pure generics and lazy by default.
 
 > [!NOTE]
