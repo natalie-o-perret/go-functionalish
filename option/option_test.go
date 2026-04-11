@@ -41,14 +41,14 @@ func TestMapNone(t *testing.T) {
 	}
 }
 
-func TestFlatMap(t *testing.T) {
+func TestBind(t *testing.T) {
 	first := func(s string) option.Option[byte] {
 		if len(s) == 0 {
 			return option.None[byte]()
 		}
 		return option.Some(s[0])
 	}
-	got := option.FlatMap(option.Some("abc"), first).UnwrapOr(0)
+	got := option.Bind(option.Some("abc"), first).UnwrapOr(0)
 	if got != 'a' {
 		t.Fatalf("got %c", got)
 	}

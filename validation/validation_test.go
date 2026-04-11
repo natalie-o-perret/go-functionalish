@@ -38,12 +38,12 @@ func assertFailureN[T, E any](t *testing.T, v validation.Validation[T, E], wantN
 // -- constructors -------------------------------------------------------------
 
 func TestSuccess(t *testing.T) {
-	v := validation.Success[int, string](42)
+	v := validation.Success[string](42) // E=string, T=int inferred
 	assertSuccess(t, v, 42)
 }
 
 func TestFailure(t *testing.T) {
-	v := validation.Failure[int, string]("bad", "worse")
+	v := validation.Failure[int]("bad", "worse") // T=int, E=string inferred
 	errs := assertFailureN(t, v, 2)
 	if errs[0] != "bad" || errs[1] != "worse" {
 		t.Fatalf("got %v", errs)
@@ -62,8 +62,8 @@ func TestFailurePanicsOnEmpty(t *testing.T) {
 // -- methods ------------------------------------------------------------------
 
 func TestUnwrapOr(t *testing.T) {
-	s := validation.Success[int, string](10)
-	f := validation.Failure[int, string]("err")
+	s := validation.Success[string](10) // Validation[int, string]
+	f := validation.Failure[int]("err")
 	if s.UnwrapOr(0) != 10 {
 		t.Fatal()
 	}
@@ -73,7 +73,7 @@ func TestUnwrapOr(t *testing.T) {
 }
 
 func TestUnwrapOrElse(t *testing.T) {
-	f := validation.Failure[int, string]("a", "b")
+	f := validation.Failure[int]("a", "b")
 	got := f.UnwrapOrElse(func(errs []string) int { return len(errs) })
 	if got != 2 {
 		t.Fatalf("got %d", got)
@@ -86,7 +86,7 @@ func TestUnwrapPanicsOnFailure(t *testing.T) {
 			t.Fatal("expected panic")
 		}
 	}()
-	validation.Failure[int, string]("err").Unwrap()
+	validation.Failure[int]("err").Unwrap()
 }
 
 func TestUnwrapErrorsPanicsOnSuccess(t *testing.T) {
@@ -95,18 +95,18 @@ func TestUnwrapErrorsPanicsOnSuccess(t *testing.T) {
 			t.Fatal("expected panic")
 		}
 	}()
-	validation.Success[int, string](1).UnwrapErrors()
+	validation.Success[string](1).UnwrapErrors()
 }
 
-// -- Map / MapError / FlatMap -------------------------------------------------
+// -- Map / MapError / Bind ----------------------------------------------------
 
 func TestMap(t *testing.T) {
-	s := validation.Map(validation.Success[int, string](5), func(n int) string {
+	s := validation.Map(validation.Success[string](5), func(n int) string {
 		return fmt.Sprintf("%d!", n)
 	})
 	assertSuccess(t, s, "5!")
 
-	f := validation.Map(validation.Failure[int, string]("err"), func(n int) string {
+	f := validation.Map(validation.Failure[int]("err"), func(n int) string {
 		return "nope"
 	})
 	assertFailureN(t, f, 1)
@@ -114,7 +114,7 @@ func TestMap(t *testing.T) {
 
 func TestMapError(t *testing.T) {
 	f := validation.MapError(
-		validation.Failure[int, string]("bad"),
+		validation.Failure[int]("bad"),
 		strings.ToUpper,
 	)
 	errs := assertFailureN(t, f, 1)
@@ -123,35 +123,35 @@ func TestMapError(t *testing.T) {
 	}
 
 	s := validation.MapError(
-		validation.Success[int, string](42),
+		validation.Success[string](42),
 		strings.ToUpper,
 	)
 	assertSuccess(t, s, 42)
 }
 
-func TestFlatMap(t *testing.T) {
+func TestBind(t *testing.T) {
 	half := func(n int) validation.Validation[int, string] {
 		if n%2 != 0 {
-			return validation.Failure[int, string]("odd")
+			return validation.Failure[int]("odd")
 		}
-		return validation.Success[int, string](n / 2)
+		return validation.Success[string](n / 2)
 	}
-	assertSuccess(t, validation.FlatMap(validation.Success[int, string](10), half), 5)
-	assertFailureN(t, validation.FlatMap(validation.Success[int, string](7), half), 1)
-	assertFailureN(t, validation.FlatMap(validation.Failure[int, string]("first"), half), 1)
+	assertSuccess(t, validation.Bind(validation.Success[string](10), half), 5)
+	assertFailureN(t, validation.Bind(validation.Success[string](7), half), 1)
+	assertFailureN(t, validation.Bind(validation.Failure[int]("first"), half), 1)
 }
 
 // -- Apply --------------------------------------------------------------------
 
 func TestApply(t *testing.T) {
-	fnV := validation.Success[func(int) int, string](func(n int) int { return n * 2 })
-	valV := validation.Success[int, string](21)
+	fnV := validation.Success[string](func(n int) int { return n * 2 })
+	valV := validation.Success[string](21)
 	assertSuccess(t, validation.Apply(fnV, valV), 42)
 }
 
 func TestApplyAccumulatesErrors(t *testing.T) {
-	fnF := validation.Failure[func(int) int, string]("fn error")
-	valF := validation.Failure[int, string]("val error")
+	fnF := validation.Failure[func(int) int]("fn error")
+	valF := validation.Failure[int]("val error")
 	errs := assertFailureN(t, validation.Apply(fnF, valF), 2)
 	if errs[0] != "fn error" || errs[1] != "val error" {
 		t.Fatalf("got %v", errs)
@@ -162,8 +162,8 @@ func TestApplyAccumulatesErrors(t *testing.T) {
 
 func TestMap2Success(t *testing.T) {
 	v := validation.Map2(
-		validation.Success[string, string]("Alice"),
-		validation.Success[int, string](30),
+		validation.Success[string]("Alice"),
+		validation.Success[string](30),
 		func(name string, age int) string { return fmt.Sprintf("%s:%d", name, age) },
 	)
 	assertSuccess(t, v, "Alice:30")
@@ -171,8 +171,8 @@ func TestMap2Success(t *testing.T) {
 
 func TestMap2AccumulatesErrors(t *testing.T) {
 	v := validation.Map2(
-		validation.Failure[string, string]("name required"),
-		validation.Failure[int, string]("age invalid"),
+		validation.Failure[string]("name required"),
+		validation.Failure[int]("age invalid"),
 		func(name string, age int) string { return "" },
 	)
 	errs := assertFailureN(t, v, 2)
@@ -188,17 +188,17 @@ func TestMap3(t *testing.T) {
 	}
 
 	v := validation.Map3(
-		validation.Failure[string, string]("name required"),
-		validation.Failure[int, string]("age must be positive"),
-		validation.Failure[string, string]("email invalid"),
+		validation.Failure[string]("name required"),
+		validation.Failure[int]("age must be positive"),
+		validation.Failure[string]("email invalid"),
 		func(n string, a int, e string) User { return User{Name: n, Email: e, Age: a} },
 	)
 	assertFailureN(t, v, 3)
 
 	v2 := validation.Map3(
-		validation.Success[string, string]("Alice"),
-		validation.Success[int, string](30),
-		validation.Success[string, string]("alice@example.com"),
+		validation.Success[string]("Alice"),
+		validation.Success[string](30),
+		validation.Success[string]("alice@example.com"),
 		func(n string, a int, e string) User { return User{Name: n, Email: e, Age: a} },
 	)
 	if !v2.IsSuccess() {
@@ -212,10 +212,10 @@ func TestMap3(t *testing.T) {
 
 func TestMap4(t *testing.T) {
 	v := validation.Map4(
-		validation.Success[int, string](1),
-		validation.Failure[int, string]("b"),
-		validation.Success[int, string](3),
-		validation.Failure[int, string]("d"),
+		validation.Success[string](1),
+		validation.Failure[int]("b"),
+		validation.Success[string](3),
+		validation.Failure[int]("d"),
 		func(a, b, c, d int) int { return a + b + c + d },
 	)
 	assertFailureN(t, v, 2) // only b and d fail
@@ -223,11 +223,11 @@ func TestMap4(t *testing.T) {
 
 func TestMap5(t *testing.T) {
 	v := validation.Map5(
-		validation.Failure[int, string]("a"),
-		validation.Failure[int, string]("b"),
-		validation.Failure[int, string]("c"),
-		validation.Failure[int, string]("d"),
-		validation.Failure[int, string]("e"),
+		validation.Failure[int]("a"),
+		validation.Failure[int]("b"),
+		validation.Failure[int]("c"),
+		validation.Failure[int]("d"),
+		validation.Failure[int]("e"),
 		func(a, b, c, d, e int) int { return 0 },
 	)
 	assertFailureN(t, v, 5)
@@ -237,9 +237,9 @@ func TestMap5(t *testing.T) {
 
 func TestSequenceAllSuccess(t *testing.T) {
 	vs := []validation.Validation[int, string]{
-		validation.Success[int, string](1),
-		validation.Success[int, string](2),
-		validation.Success[int, string](3),
+		validation.Success[string](1),
+		validation.Success[string](2),
+		validation.Success[string](3),
 	}
 	v := validation.Sequence(vs)
 	if !v.IsSuccess() {
@@ -253,10 +253,10 @@ func TestSequenceAllSuccess(t *testing.T) {
 
 func TestSequenceAccumulatesErrors(t *testing.T) {
 	vs := []validation.Validation[int, string]{
-		validation.Success[int, string](1),
-		validation.Failure[int, string]("err1"),
-		validation.Success[int, string](3),
-		validation.Failure[int, string]("err2", "err3"),
+		validation.Success[string](1),
+		validation.Failure[int]("err1"),
+		validation.Success[string](3),
+		validation.Failure[int]("err2", "err3"),
 	}
 	errs := assertFailureN(t, validation.Sequence(vs), 3)
 	if errs[0] != "err1" || errs[1] != "err2" || errs[2] != "err3" {
@@ -270,9 +270,9 @@ func TestTraverseAllValid(t *testing.T) {
 	v := validation.Traverse([]string{"1", "2", "3"}, func(s string) validation.Validation[int, string] {
 		n, err := strconv.Atoi(s)
 		if err != nil {
-			return validation.Failure[int, string](fmt.Sprintf("not a number: %s", s))
+			return validation.Failure[int](fmt.Sprintf("not a number: %s", s))
 		}
-		return validation.Success[int, string](n)
+		return validation.Success[string](n)
 	})
 	if !v.IsSuccess() {
 		t.Fatalf("expected success, got %v", v.UnwrapErrors())
@@ -287,9 +287,9 @@ func TestTraverseAccumulatesErrors(t *testing.T) {
 	v := validation.Traverse([]string{"1", "bad", "3", "nope"}, func(s string) validation.Validation[int, string] {
 		n, err := strconv.Atoi(s)
 		if err != nil {
-			return validation.Failure[int, string](fmt.Sprintf("not a number: %s", s))
+			return validation.Failure[int](fmt.Sprintf("not a number: %s", s))
 		}
-		return validation.Success[int, string](n)
+		return validation.Success[string](n)
 	})
 	assertFailureN(t, v, 2)
 }
@@ -319,12 +319,12 @@ func TestFromOption(t *testing.T) {
 }
 
 func TestToResult(t *testing.T) {
-	s := validation.Success[int, string](42).ToResult()
+	s := validation.Success[string](42).ToResult()
 	if !s.IsOk() || s.Unwrap() != 42 {
 		t.Fatal()
 	}
 
-	f := validation.Failure[int, string]("a", "b").ToResult()
+	f := validation.Failure[int]("a", "b").ToResult()
 	if !f.IsErr() {
 		t.Fatal()
 	}
@@ -335,12 +335,12 @@ func TestToResult(t *testing.T) {
 }
 
 func TestToOption(t *testing.T) {
-	s := validation.Success[int, string](42).ToOption()
+	s := validation.Success[string](42).ToOption()
 	if s.IsNone() || s.Unwrap() != 42 {
 		t.Fatal()
 	}
 
-	f := validation.Failure[int, string]("err").ToOption()
+	f := validation.Failure[int]("err").ToOption()
 	if f.IsSome() {
 		t.Fatal()
 	}
@@ -357,29 +357,29 @@ func TestFormValidation(t *testing.T) {
 
 	validateName := func(name string) validation.Validation[string, string] {
 		if strings.TrimSpace(name) == "" {
-			return validation.Failure[string, string]("name is required")
+			return validation.Failure[string]("name is required")
 		}
 		if len(name) < 2 {
-			return validation.Failure[string, string]("name must be at least 2 characters")
+			return validation.Failure[string]("name must be at least 2 characters")
 		}
-		return validation.Success[string, string](name)
+		return validation.Success[string](name)
 	}
 
 	validateEmail := func(email string) validation.Validation[string, string] {
 		if !strings.Contains(email, "@") {
-			return validation.Failure[string, string]("email must contain @")
+			return validation.Failure[string]("email must contain @")
 		}
-		return validation.Success[string, string](email)
+		return validation.Success[string](email)
 	}
 
 	validateAge := func(age int) validation.Validation[int, string] {
 		if age < 18 {
-			return validation.Failure[int, string]("must be 18 or older")
+			return validation.Failure[int]("must be 18 or older")
 		}
 		if age > 150 {
-			return validation.Failure[int, string]("age seems unrealistic")
+			return validation.Failure[int]("age seems unrealistic")
 		}
-		return validation.Success[int, string](age)
+		return validation.Success[string](age)
 	}
 
 	// All invalid

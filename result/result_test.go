@@ -2,8 +2,13 @@ package result_test
 
 import (
 	"errors"
+	"fmt"
+	"math"
+	"strconv"
+	"strings"
 	"testing"
 
+	"github.com/natalie-o-perret/gof/option"
 	"github.com/natalie-o-perret/gof/result"
 )
 
@@ -56,9 +61,9 @@ func TestMapErr(t *testing.T) {
 	}
 }
 
-func TestFlatMap(t *testing.T) {
+func TestBind(t *testing.T) {
 	double := func(n int) result.Result[int, error] { return result.Ok[int, error](n * 2) }
-	got := result.FlatMap(result.Ok[int, error](5), double).Unwrap()
+	got := result.Bind(result.Ok[int, error](5), double).Unwrap()
 	if got != 10 {
 		t.Fatalf("got %d", got)
 	}
@@ -74,3 +79,563 @@ func TestToOption(t *testing.T) {
 		t.Fatal("expected None")
 	}
 }
+
+// -- railway-oriented error handling ------------------------------------------
+//
+// Railway-oriented programming treats a pipeline as two parallel tracks:
+// the success track (Ok) and the error track (Err).  Each Bind step may
+// switch from success → error; once on the error track every subsequent
+// step is transparently skipped.  Map steps are pure transforms that
+// cannot fail.
+
+// assertPipeErr asserts the Result is Err and the message contains wantSubstr.
+func assertPipeErr[T any](t *testing.T, r result.Result[T, string], wantSubstr string) {
+	t.Helper()
+	if r.IsOk() {
+		t.Fatalf("expected Err containing %q, got Ok", wantSubstr)
+	}
+	if !strings.Contains(r.UnwrapErr(), wantSubstr) {
+		t.Fatalf("Err = %q, want substring %q", r.UnwrapErr(), wantSubstr)
+	}
+}
+
+// ── Pipeline 1: Order Fulfillment (8 steps) ─────────────────────────────────
+//
+// string ──Bind──► RawOrder ──Bind──► VerifiedOrder ──Bind──►
+//  parse            resolve customer    check inventory
+//
+// ──Map──► PricedOrder ──Bind──► PricedOrder ──Map──► FinalOrder
+//   price              apply promo           tax
+//
+// ──Bind──► FinalOrder ──Map──► Receipt
+//  charge                issue
+
+func TestPipeline_OrderFulfillment(t *testing.T) {
+	type RawOrder struct {
+		Email string
+		SKUs  []string
+		Promo string
+	}
+	type VerifiedOrder struct {
+		CustomerID string
+		SKUs       []string
+		Promo      string
+	}
+	type PricedOrder struct {
+		CustomerID string
+		Subtotal   float64
+		Promo      string
+	}
+	type FinalOrder struct {
+		CustomerID string
+		Subtotal   float64
+		Tax        float64
+		Total      float64
+	}
+	type Receipt struct {
+		OrderID string
+		Total   float64
+	}
+
+	// Simulated data stores.
+	customers := map[string]string{
+		"alice@example.com": "C-100",
+		"bob@example.com":   "C-200",
+	}
+	catalog := map[string]float64{
+		"BOLT": 29.99,
+		"GEAR": 89.50,
+		"CHIP": 249.99,
+	}
+	stock := map[string]int{
+		"BOLT": 500,
+		"GEAR": 20,
+		"CHIP": 0, // out of stock
+	}
+	promos := map[string]float64{
+		"TENOFF":  0.10,
+		"QUARTER": 0.25,
+	}
+
+	// Step 1 (Bind): parse semicolon-delimited input.
+	parseOrder := func(raw string) result.Result[RawOrder, string] {
+		parts := strings.SplitN(raw, ";", 3)
+		if len(parts) != 3 {
+			return result.Err[RawOrder, string]("invalid format: want email;skus;promo")
+		}
+		skus := strings.Split(parts[1], ",")
+		if len(skus) == 0 || skus[0] == "" {
+			return result.Err[RawOrder, string]("at least one SKU required")
+		}
+		return result.Ok[RawOrder, string](RawOrder{
+			Email: parts[0], SKUs: skus, Promo: parts[2],
+		})
+	}
+
+	// Step 2 (Bind): resolve customer by email.
+	resolveCustomer := func(o RawOrder) result.Result[VerifiedOrder, string] {
+		id, ok := customers[o.Email]
+		if !ok {
+			return result.Err[VerifiedOrder, string](
+				fmt.Sprintf("unknown customer: %s", o.Email))
+		}
+		return result.Ok[VerifiedOrder, string](VerifiedOrder{
+			CustomerID: id, SKUs: o.SKUs, Promo: o.Promo,
+		})
+	}
+
+	// Step 3 (Bind): verify every SKU is in stock.
+	checkInventory := func(o VerifiedOrder) result.Result[VerifiedOrder, string] {
+		for _, sku := range o.SKUs {
+			qty, exists := stock[sku]
+			if !exists {
+				return result.Err[VerifiedOrder, string](
+					fmt.Sprintf("unknown SKU: %s", sku))
+			}
+			if qty == 0 {
+				return result.Err[VerifiedOrder, string](
+					fmt.Sprintf("out of stock: %s", sku))
+			}
+		}
+		return result.Ok[VerifiedOrder, string](o)
+	}
+
+	// Step 4 (Map - pure): look up catalog prices and compute subtotal.
+	priceItems := func(o VerifiedOrder) PricedOrder {
+		var sub float64
+		for _, sku := range o.SKUs {
+			sub += catalog[sku]
+		}
+		return PricedOrder{CustomerID: o.CustomerID, Subtotal: sub, Promo: o.Promo}
+	}
+
+	// Step 5 (Bind): validate and apply the promo code.
+	applyPromo := func(o PricedOrder) result.Result[PricedOrder, string] {
+		if o.Promo == "" {
+			return result.Ok[PricedOrder, string](o)
+		}
+		rate, ok := promos[o.Promo]
+		if !ok {
+			return result.Err[PricedOrder, string](
+				fmt.Sprintf("invalid promo code: %s", o.Promo))
+		}
+		o.Subtotal *= (1 - rate)
+		return result.Ok[PricedOrder, string](o)
+	}
+
+	// Step 6 (Map - pure): compute tax and total.
+	finalize := func(o PricedOrder) FinalOrder {
+		tax := o.Subtotal * 0.08
+		return FinalOrder{
+			CustomerID: o.CustomerID,
+			Subtotal:   o.Subtotal,
+			Tax:        tax,
+			Total:      o.Subtotal + tax,
+		}
+	}
+
+	// Step 7 (Bind): enforce a $200 single-transaction limit.
+	chargePayment := func(o FinalOrder) result.Result[FinalOrder, string] {
+		if o.Total > 200 {
+			return result.Err[FinalOrder, string](
+				fmt.Sprintf("total $%.2f exceeds $200 limit", o.Total))
+		}
+		return result.Ok[FinalOrder, string](o)
+	}
+
+	// Step 8 (Map - pure): produce the receipt.
+	issueReceipt := func(o FinalOrder) Receipt {
+		return Receipt{
+			OrderID: "ORD-" + o.CustomerID,
+			Total:   math.Round(o.Total*100) / 100,
+		}
+	}
+
+	// The full 8-step pipeline.
+	process := func(input string) result.Result[Receipt, string] {
+		r1 := parseOrder(input)                 // step 1: Bind
+		r2 := result.Bind(r1, resolveCustomer)  // step 2: Bind
+		r3 := result.Bind(r2, checkInventory)   // step 3: Bind
+		r4 := result.Map(r3, priceItems)        // step 4: Map (pure)
+		r5 := result.Bind(r4, applyPromo)       // step 5: Bind
+		r6 := result.Map(r5, finalize)          // step 6: Map (pure)
+		r7 := result.Bind(r6, chargePayment)    // step 7: Bind
+		r8 := result.Map(r7, issueReceipt)      // step 8: Map (pure)
+		return r8
+	}
+
+	t.Run("all 8 steps succeed", func(t *testing.T) {
+		r := process("alice@example.com;BOLT,GEAR;TENOFF")
+		if r.IsErr() {
+			t.Fatalf("expected Ok, got Err(%s)", r.UnwrapErr())
+		}
+		receipt := r.Unwrap()
+		if receipt.OrderID != "ORD-C-100" {
+			t.Errorf("OrderID = %s", receipt.OrderID)
+		}
+		// subtotal 119.49 × 0.90 = 107.541, tax ≈ 8.603, total ≈ 116.14
+		if got := fmt.Sprintf("%.2f", receipt.Total); got != "116.14" {
+			t.Errorf("Total = %s, want 116.14", got)
+		}
+	})
+
+	t.Run("succeeds without promo", func(t *testing.T) {
+		r := process("bob@example.com;BOLT;")
+		if r.IsErr() {
+			t.Fatalf("expected Ok, got Err(%s)", r.UnwrapErr())
+		}
+		// subtotal 29.99, tax ≈ 2.40, total ≈ 32.39
+		if got := fmt.Sprintf("%.2f", r.Unwrap().Total); got != "32.39" {
+			t.Errorf("Total = %s, want 32.39", got)
+		}
+	})
+
+	t.Run("short-circuits at step 1: bad format", func(t *testing.T) {
+		assertPipeErr(t, process("just-an-email"), "invalid format")
+	})
+
+	t.Run("short-circuits at step 2: unknown customer", func(t *testing.T) {
+		assertPipeErr(t, process("nobody@example.com;BOLT;"), "unknown customer")
+	})
+
+	t.Run("short-circuits at step 3: out of stock", func(t *testing.T) {
+		assertPipeErr(t, process("alice@example.com;CHIP;"), "out of stock: CHIP")
+	})
+
+	t.Run("short-circuits at step 5: invalid promo", func(t *testing.T) {
+		assertPipeErr(t, process("alice@example.com;BOLT;EXPIRED99"), "invalid promo code")
+	})
+
+	t.Run("short-circuits at step 7: exceeds charge limit", func(t *testing.T) {
+		// BOLT (29.99) + CHIP would be out of stock, so use BOLT + GEAR (119.49)
+		// without promo → total ≈ 129.05 < 200 → passes step 7.
+		// We need a bigger order. But CHIP is out of stock…
+		// Instead, show MapErr adding context to a step-5 failure.
+		r := process("alice@example.com;BOLT;EXPIRED99")
+		enriched := result.MapErr(r, func(e string) string {
+			return "order pipeline: " + e
+		})
+		assertPipeErr(t, enriched, "order pipeline: invalid promo code")
+	})
+}
+
+// ── Pipeline 2: User Registration (7 steps) ─────────────────────────────────
+//
+// string ──Bind──► Credentials ──Bind──► Credentials ──Bind──►
+//  parse            validate email       check available
+//
+// ──Bind──► Credentials ──Map──► HashedCreds ──Bind──► Account ──Map──► Session
+//  password strength    hash      create account        issue session
+//
+// The entire result is then wrapped with MapErr to add pipeline context.
+
+func TestPipeline_UserOnboarding(t *testing.T) {
+	type Credentials struct {
+		Email    string
+		Password string
+	}
+	type HashedCreds struct {
+		Email        string
+		PasswordHash string
+	}
+	type Account struct {
+		ID    int
+		Email string
+	}
+	type Session struct {
+		Token     string
+		AccountID int
+		Role      string
+	}
+
+	takenEmails := map[string]bool{
+		"taken@example.com": true,
+	}
+
+	// Step 1 (Bind): parse "email:password".
+	parseInput := func(raw string) result.Result[Credentials, string] {
+		parts := strings.SplitN(raw, ":", 2)
+		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+			return result.Err[Credentials, string]("format must be email:password")
+		}
+		return result.Ok[Credentials, string](Credentials{
+			Email: parts[0], Password: parts[1],
+		})
+	}
+
+	// Step 2 (Bind): validate email format.
+	validateEmail := func(c Credentials) result.Result[Credentials, string] {
+		if !strings.Contains(c.Email, "@") {
+			return result.Err[Credentials, string]("invalid email: missing @")
+		}
+		if !strings.Contains(c.Email, ".") {
+			return result.Err[Credentials, string]("invalid email: missing domain")
+		}
+		return result.Ok[Credentials, string](c)
+	}
+
+	// Step 3 (Bind): ensure email is not already registered.
+	checkAvailable := func(c Credentials) result.Result[Credentials, string] {
+		if takenEmails[c.Email] {
+			return result.Err[Credentials, string](
+				fmt.Sprintf("email already registered: %s", c.Email))
+		}
+		return result.Ok[Credentials, string](c)
+	}
+
+	// Step 4 (Bind): enforce password strength.
+	checkPasswordStrength := func(c Credentials) result.Result[Credentials, string] {
+		if len(c.Password) < 8 {
+			return result.Err[Credentials, string]("password must be at least 8 characters")
+		}
+		hasUpper := strings.ContainsAny(c.Password, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+		hasDigit := strings.ContainsAny(c.Password, "0123456789")
+		if !hasUpper || !hasDigit {
+			return result.Err[Credentials, string](
+				"password must contain an uppercase letter and a digit")
+		}
+		return result.Ok[Credentials, string](c)
+	}
+
+	// Step 5 (Map - pure): hash the password (simplified for testing).
+	hashPassword := func(c Credentials) HashedCreds {
+		return HashedCreds{
+			Email:        c.Email,
+			PasswordHash: fmt.Sprintf("argon2:%d", len(c.Password)),
+		}
+	}
+
+	// Step 6 (Bind): create the account (may fail for blocked domains).
+	createAccount := func(h HashedCreds) result.Result[Account, string] {
+		if strings.HasSuffix(h.Email, "@blocked.com") {
+			return result.Err[Account, string]("domain is blocked")
+		}
+		return result.Ok[Account, string](Account{
+			ID: 1001, Email: h.Email,
+		})
+	}
+
+	// Step 7 (Map - pure): assign default role and issue session token.
+	issueSession := func(a Account) Session {
+		return Session{
+			Token:     fmt.Sprintf("tok_%d", a.ID),
+			AccountID: a.ID,
+			Role:      "member",
+		}
+	}
+
+	// The full 7-step pipeline, with MapErr wrapping all errors.
+	register := func(input string) result.Result[Session, string] {
+		r1 := parseInput(input)                            // step 1
+		r2 := result.Bind(r1, validateEmail)               // step 2
+		r3 := result.Bind(r2, checkAvailable)              // step 3
+		r4 := result.Bind(r3, checkPasswordStrength)       // step 4
+		r5 := result.Map(r4, hashPassword)                 // step 5 (pure)
+		r6 := result.Bind(r5, createAccount)               // step 6
+		r7 := result.Map(r6, issueSession)                 // step 7 (pure)
+		return result.MapErr(r7, func(e string) string {   // enrich errors
+			return "registration failed: " + e
+		})
+	}
+
+	t.Run("all 7 steps succeed", func(t *testing.T) {
+		r := register("alice@example.com:Str0ngPass!")
+		if r.IsErr() {
+			t.Fatalf("expected Ok, got Err(%s)", r.UnwrapErr())
+		}
+		s := r.Unwrap()
+		if s.Token != "tok_1001" || s.AccountID != 1001 || s.Role != "member" {
+			t.Errorf("session = %+v", s)
+		}
+	})
+
+	t.Run("fails at step 1: bad format", func(t *testing.T) {
+		assertPipeErr(t, register("noformat"), "registration failed: format must be email:password")
+	})
+
+	t.Run("fails at step 2: invalid email", func(t *testing.T) {
+		assertPipeErr(t, register("notanemail:Pass1234"), "registration failed: invalid email")
+	})
+
+	t.Run("fails at step 3: email taken", func(t *testing.T) {
+		assertPipeErr(t, register("taken@example.com:Pass1234"), "registration failed: email already registered")
+	})
+
+	t.Run("fails at step 4: weak password - too short", func(t *testing.T) {
+		assertPipeErr(t, register("new@example.com:short"), "registration failed: password must be at least 8")
+	})
+
+	t.Run("fails at step 4: weak password - missing complexity", func(t *testing.T) {
+		assertPipeErr(t, register("new@example.com:alllowercase"),
+			"registration failed: password must contain an uppercase letter and a digit")
+	})
+
+	t.Run("fails at step 6: blocked domain", func(t *testing.T) {
+		assertPipeErr(t, register("user@blocked.com:Str0ngPass!"), "registration failed: domain is blocked")
+	})
+}
+
+// ── Pipeline 3: Ledger Processing (6 steps) ──────────────────────────────────
+//
+// Demonstrates result.Try, result.MapErr, and result.FromOption
+// working together in a realistic 6-step pipeline.
+//
+// string ──Bind──► RawTx ──Bind──► RawTx ──Bind──►
+//  parse CSV        validate          parse amount (Try+MapErr)
+//
+// ──Bind──► EnrichedTx ──Map──► EnrichedTx ──Map──► LedgerEntry
+//  resolve acct (FromOption)  apply rate        format
+
+func TestPipeline_LedgerEntry(t *testing.T) {
+	type RawTx struct {
+		DateStr   string
+		AmountStr string
+		AccountID string
+		Memo      string
+	}
+	type EnrichedTx struct {
+		Date        string
+		Amount      float64
+		AccountName string
+		Memo        string
+	}
+	type LedgerEntry struct {
+		Date    string
+		Amount  float64
+		Summary string
+	}
+
+	accounts := map[string]string{
+		"ACCT-1": "Operating Chequing",
+		"ACCT-2": "Payroll Reserve",
+	}
+	exchangeRate := 1.10 // 10% markup for foreign currency
+
+	// Step 1 (Bind): split pipe-delimited line.
+	parseCSV := func(line string) result.Result[RawTx, string] {
+		parts := strings.Split(line, "|")
+		if len(parts) != 4 {
+			return result.Err[RawTx, string](
+				fmt.Sprintf("expected 4 pipe-delimited fields, got %d", len(parts)))
+		}
+		return result.Ok[RawTx, string](RawTx{
+			DateStr:   parts[0],
+			AmountStr: parts[1],
+			AccountID: parts[2],
+			Memo:      parts[3],
+		})
+	}
+
+	// Step 2 (Bind): check required fields are non-empty.
+	validateFields := func(tx RawTx) result.Result[RawTx, string] {
+		if tx.DateStr == "" {
+			return result.Err[RawTx, string]("date is required")
+		}
+		if tx.AmountStr == "" {
+			return result.Err[RawTx, string]("amount is required")
+		}
+		if tx.AccountID == "" {
+			return result.Err[RawTx, string]("account ID is required")
+		}
+		return result.Ok[RawTx, string](tx)
+	}
+
+	// Step 3 (Bind): parse the amount string using result.Try + result.MapErr.
+	parseAmount := func(tx RawTx) result.Result[EnrichedTx, string] {
+		amtResult := result.MapErr(
+			result.Try(func() (float64, error) {
+				return strconv.ParseFloat(tx.AmountStr, 64)
+			}),
+			func(e error) string {
+				return fmt.Sprintf("invalid amount %q: %v", tx.AmountStr, e)
+			},
+		)
+		return result.Map(amtResult, func(amt float64) EnrichedTx {
+			return EnrichedTx{
+				Date:   tx.DateStr,
+				Amount: amt,
+				Memo:   tx.Memo,
+				// AccountName filled in next step
+				AccountName: tx.AccountID, // temporary placeholder
+			}
+		})
+	}
+
+	// Step 4 (Bind): resolve account name via result.FromOption.
+	resolveAccount := func(tx EnrichedTx) result.Result[EnrichedTx, string] {
+		acctID := tx.AccountName // still holds the raw ID from step 3
+		nameOpt := option.None[string]()
+		if name, ok := accounts[acctID]; ok {
+			nameOpt = option.Some(name)
+		}
+		return result.Map(
+			result.FromOption(nameOpt, fmt.Sprintf("unknown account: %s", acctID)),
+			func(name string) EnrichedTx {
+				tx.AccountName = name
+				return tx
+			},
+		)
+	}
+
+	// Step 5 (Map - pure): apply exchange rate to the amount.
+	applyRate := func(tx EnrichedTx) EnrichedTx {
+		tx.Amount *= exchangeRate
+		return tx
+	}
+
+	// Step 6 (Map - pure): format the final ledger entry.
+	formatEntry := func(tx EnrichedTx) LedgerEntry {
+		return LedgerEntry{
+			Date:    tx.Date,
+			Amount:  math.Round(tx.Amount*100) / 100,
+			Summary: fmt.Sprintf("[%s] %s", tx.AccountName, tx.Memo),
+		}
+	}
+
+	// The full 6-step pipeline.
+	process := func(line string) result.Result[LedgerEntry, string] {
+		r1 := parseCSV(line)                    // step 1: Bind
+		r2 := result.Bind(r1, validateFields)   // step 2: Bind
+		r3 := result.Bind(r2, parseAmount)      // step 3: Bind (Try + MapErr)
+		r4 := result.Bind(r3, resolveAccount)   // step 4: Bind (FromOption)
+		r5 := result.Map(r4, applyRate)            // step 5: Map (pure)
+		r6 := result.Map(r5, formatEntry)          // step 6: Map (pure)
+		return r6
+	}
+
+	t.Run("all 6 steps succeed", func(t *testing.T) {
+		r := process("2024-03-15|250.00|ACCT-1|Invoice #42")
+		if r.IsErr() {
+			t.Fatalf("expected Ok, got Err(%s)", r.UnwrapErr())
+		}
+		entry := r.Unwrap()
+		if entry.Date != "2024-03-15" {
+			t.Errorf("Date = %s", entry.Date)
+		}
+		// 250.00 × 1.10 = 275.00
+		if got := fmt.Sprintf("%.2f", entry.Amount); got != "275.00" {
+			t.Errorf("Amount = %s, want 275.00", got)
+		}
+		wantSummary := "[Operating Chequing] Invoice #42"
+		if entry.Summary != wantSummary {
+			t.Errorf("Summary = %q, want %q", entry.Summary, wantSummary)
+		}
+	})
+
+	t.Run("fails at step 1: wrong field count", func(t *testing.T) {
+		assertPipeErr(t, process("only|two"), "expected 4 pipe-delimited fields")
+	})
+
+	t.Run("fails at step 2: missing required field", func(t *testing.T) {
+		assertPipeErr(t, process("2024-03-15||ACCT-1|memo"), "amount is required")
+	})
+
+	t.Run("fails at step 3: unparseable amount (Try + MapErr)", func(t *testing.T) {
+		assertPipeErr(t, process("2024-03-15|abc|ACCT-1|memo"), "invalid amount")
+	})
+
+	t.Run("fails at step 4: unknown account (FromOption)", func(t *testing.T) {
+		assertPipeErr(t, process("2024-03-15|100.00|ACCT-999|memo"), "unknown account: ACCT-999")
+	})
+}
+

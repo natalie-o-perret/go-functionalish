@@ -47,6 +47,17 @@ func Pipe8[A, B, C, D, E, F, G, H, I any](v A, f1 func(A) B, f2 func(B) C, f3 fu
 	return f8(f7(f6(f5(f4(f3(f2(f1(v))))))))
 }
 
+// PipeN threads v through an arbitrary number of same-type functions.
+// All functions must share the same input and output type T.
+// For pipelines where the type changes between steps, use Pipe2-Pipe8
+// with Compose/Compose2-Compose4 to collapse multiple steps into one slot.
+func PipeN[T any](v T, fns ...func(T) T) T {
+	for _, fn := range fns {
+		v = fn(v)
+	}
+	return v
+}
+
 // Compose merges multiple same-type transform functions into a single function.
 // Useful for collapsing consecutive same-type pipeline steps into one pipe stage.
 //

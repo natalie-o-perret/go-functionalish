@@ -91,8 +91,8 @@ func MapErr[T, E, F any](r Result[T, E], fn func(E) F) Result[T, F] {
 	return Ok[T, F](r.value)
 }
 
-// FlatMap applies fn to the Ok value, flattening the resulting Result.
-func FlatMap[T, U, E any](r Result[T, E], fn func(T) Result[U, E]) Result[U, E] {
+// Bind applies fn to the Ok value, flattening the resulting Result.
+func Bind[T, U, E any](r Result[T, E], fn func(T) Result[U, E]) Result[U, E] {
 	if r.ok {
 		return fn(r.value)
 	}
