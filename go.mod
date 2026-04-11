@@ -1,4 +1,4 @@
-module github.com/natalie/gof
+module github.com/natalie-o-perret/gof
 
 go 1.25.8
 

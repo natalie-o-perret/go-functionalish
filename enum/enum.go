@@ -15,8 +15,8 @@ import (
 
 	"github.com/BooleanCat/go-functional/v2/it"
 	"github.com/BooleanCat/go-functional/v2/it/itx"
-	"github.com/natalie/gof/option"
-	"github.com/natalie/gof/result"
+	"github.com/natalie-o-perret/gof/option"
+	"github.com/natalie-o-perret/gof/result"
 )
 
 // Enumerable[T] is a lazy sequence backed by iter.Seq[T].

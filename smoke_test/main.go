@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/natalie/gof/enum"
-	"github.com/natalie/gof/option"
-	"github.com/natalie/gof/pipe"
-	"github.com/natalie/gof/result"
+	"github.com/natalie-o-perret/gof/enum"
+	"github.com/natalie-o-perret/gof/option"
+	"github.com/natalie-o-perret/gof/pipe"
+	"github.com/natalie-o-perret/gof/result"
 )
 
 type Car struct{ Year int; Owner, Model string }
