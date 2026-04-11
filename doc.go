@@ -8,5 +8,6 @@
 //   - [github.com/natalie-o-perret/gof/seq]: lazy Seq[T] sequence pipelines (filter, map, sort, group, zip, ...)
 //   - [github.com/natalie-o-perret/gof/option]: Option[T] for explicit presence/absence, no nil
 //   - [github.com/natalie-o-perret/gof/result]: Result[T,E] for railway-oriented error handling
+//   - [github.com/natalie-o-perret/gof/validation]: Validation[T,E] for applicative error accumulation
 //   - [github.com/natalie-o-perret/gof/pipe]: Pipe2 through Pipe8 plus Compose for F#-style |> threading
 package gof
