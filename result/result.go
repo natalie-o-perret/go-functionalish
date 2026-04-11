@@ -106,4 +106,3 @@ func FromOption[T, E any](o option.Option[T], errIfNone E) Result[T, E] {
 	}
 	return Err[T, E](errIfNone)
 }
-
