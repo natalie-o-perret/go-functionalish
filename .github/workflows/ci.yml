@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ["1.23", "1.24"]
+        go: ["1.24", "1.26"]
     steps:
       - uses: actions/checkout@v4
 
@@ -31,7 +31,7 @@ jobs:
         run: go test -race -coverprofile=coverage.out ./...
 
       - name: upload coverage
-        if: matrix.go == '1.24'
+        if: matrix.go == '1.26'
         uses: actions/upload-artifact@v4
         with:
           name: coverage
@@ -45,7 +45,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.24"
+          go-version: "1.26"
           cache: true
 
       - name: install govulncheck
@@ -62,7 +62,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.24"
+          go-version: "1.26"
           cache: true
 
       - uses: golangci/golangci-lint-action@v6

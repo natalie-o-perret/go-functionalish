@@ -1,15 +1,16 @@
 version: "2"
 
+formatters:
+  enable:
+    - gofmt
+
 linters:
   enable:
     - govet
     - staticcheck
     - unused
     - errcheck
-    - gosimple
     - ineffassign
-    - typecheck
-    - gofmt
     - misspell
     - unconvert
     - unparam
