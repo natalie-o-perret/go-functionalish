@@ -13,15 +13,15 @@ import (
 )
 
 type Car struct {
-	Year         int
 	Owner, Model string
+	Year         int
 }
 
 func main() {
 	cars := []Car{
-		{2012, "Alice", "Toyota"}, {2016, "Bob", "Honda"},
-		{2018, "Charlie", "Ford"}, {2015, "Diana", "BMW"},
-		{2020, "Eve", "Tesla"}, {2013, "Frank", "Honda"},
+		{"Alice", "Toyota", 2012}, {"Bob", "Honda", 2016},
+		{"Charlie", "Ford", 2018}, {"Diana", "BMW", 2015},
+		{"Eve", "Tesla", 2020}, {"Frank", "Honda", 2013},
 	}
 
 	// ── seq (fluent style with Then + curried helpers) ──────────────────────

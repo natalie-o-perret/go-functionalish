@@ -14,8 +14,7 @@ linters:
     - misspell
     - unconvert
     - unparam
-
-linters-settings:
-  govet:
-    enable-all: true
+  settings:
+    govet:
+      enable-all: true
 
