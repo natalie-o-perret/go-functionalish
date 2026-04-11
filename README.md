@@ -18,12 +18,13 @@ No reflection. No `interface{}`. Pure generics and lazy by default.
 
 ## Packages
 
-| Package  | Description                                           |
-|----------|-------------------------------------------------------|
-| `seq`    | Lazy `Seq[T]`: F#-style sequence pipelines           |
-| `option` | `Option[T]`: explicit presence/absence, no nil       |
-| `result` | `Result[T,E]`: railway-oriented error handling       |
-| `pipe`   | `Pipe2`...`Pipe8`: F#-style `\|>` operator equivalent |
+| Package      | Description                                           |
+|--------------|-------------------------------------------------------|
+| `seq`        | Lazy `Seq[T]`: F#-style sequence pipelines            |
+| `option`     | `Option[T]`: explicit presence/absence, no nil        |
+| `result`     | `Result[T,E]`: railway-oriented error handling        |
+| `validation` | `Validation[T,E]`: applicative error accumulation     |
+| `pipe`       | `Pipe2`...`Pipe8`: F#-style `\|>` operator equivalent |
 
 ## Quick start
 
@@ -123,6 +124,52 @@ if final.IsOk() {
 // Interop with option
 opt := res.ToOption()                           // Ok => Some, Err => None
 res2 := result.FromOption(opt, errors.New("not found"))
+```
+
+### validation : applicative error accumulation
+
+```go
+// Unlike Result which short-circuits, Validation runs ALL checks
+// and collects every error.
+
+validateName := func(name string) validation.Validation[string, string] {
+    if name == "" {
+        return validation.Failure[string, string]("name is required")
+    }
+    return validation.Success[string, string](name)
+}
+
+validateAge := func(age int) validation.Validation[int, string] {
+    if age < 18 {
+        return validation.Failure[int, string]("must be 18 or older")
+    }
+    return validation.Success[int, string](age)
+}
+
+// Map2-Map5: combine N validations, accumulating ALL errors
+user := validation.Map2(
+    validateName(""),       // Failure
+    validateAge(12),        // Failure
+    func(name string, age int) User { return User{name, age} },
+)
+// => Failure(["name is required", "must be 18 or older"])
+// Both errors reported, nothing short-circuited!
+
+// Sequence: []Validation => Validation[[]T]
+results := validation.Sequence([]validation.Validation[int, string]{
+    validation.Success[int, string](1),
+    validation.Failure[int, string]("bad"),
+    validation.Failure[int, string]("worse"),
+})
+// => Failure(["bad", "worse"])
+
+// Traverse: map + sequence in one step
+parsed := validation.Traverse([]string{"1", "bad", "3"}, parseIntV)
+// => Failure(["not a number: bad"])
+
+// Interop: Result <=> Validation
+v := validation.FromResult(result.Ok[int, string](42))  // => Success(42)
+r := v.ToResult()                                         // => Ok(42)
 ```
 
 ### pipe : threading values
@@ -229,10 +276,11 @@ go test ./seq/ -bench=. -benchmem
 ## Dependency graph
 
 ```
-pipe    =>  (none)
-option  =>  (none)
-result  =>  option
-seq     =>  option
+pipe       =>  (none)
+option     =>  (none)
+result     =>  option
+validation =>  option, result
+seq        =>  option
 ```
 
 No circular imports. No external dependencies.
