@@ -88,6 +88,14 @@ func Zip[T, U any](a Option[T], b Option[U]) Option[Pair[T, U]] {
 	return None[Pair[T, U]]()
 }
 
+// Map2 applies fn to the values of two Options. Returns None if either is None.
+func Map2[A, B, C any](a Option[A], b Option[B], fn func(A, B) C) Option[C] {
+	if a.valid && b.valid {
+		return Some(fn(a.value, b.value))
+	}
+	return None[C]()
+}
+
 // Flatten unwraps a nested Option[Option[T]] into Option[T].
 func Flatten[T any](o Option[Option[T]]) Option[T] {
 	if o.valid {

@@ -685,3 +685,24 @@ func TestTeeErr(t *testing.T) {
 		t.Fatal("TeeErr should not call fn on Ok")
 	}
 }
+func TestZip(t *testing.T) {
+	a := result.Ok[int, string](1)
+	b := result.Ok[string, string]("hello")
+	got := result.Zip(a, b)
+	if !got.IsOk() {
+		t.Fatal("expected Ok")
+	}
+	p := got.Unwrap()
+	if p.First != 1 || p.Second != "hello" {
+		t.Fatalf("got %v", p)
+	}
+	// first Err wins
+	errA := result.Err[int, string]("a failed")
+	got2 := result.Zip(errA, b)
+	if got2.IsOk() {
+		t.Fatal("expected Err")
+	}
+	if got2.UnwrapErr() != "a failed" {
+		t.Fatalf("got %s", got2.UnwrapErr())
+	}
+}

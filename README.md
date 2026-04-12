@@ -9,11 +9,11 @@ A cohesive, opinionated, type-safe functional programming library for Go 1.24+.
 No reflection. No `interface{}`. Pure generics and lazy by default.
 
 > [!NOTE]
-> Unapologetically lamely vibe-coded with excruciatingly expensive Claude Opus 4.6.
-> 
+> Unapologetically vibe-coded with Claude Opus 4.6.
+>
 > Unapologetically not "idiomatic Go."
 >
-> Go gave us (at last) generics 17 years after C# and 18 after Java (the  latter still erases them at runtime).
+> Go gave us generics 17 years after C# and 18 after Java (the latter still erases them at runtime).
 > We're using them, for `Option[T]`, `Result[T,E]`, and lazy pipelines
 > instead of `if err != nil` sixty times per file.
 
@@ -132,8 +132,12 @@ none.UnwrapOr("anonymous") // => "anonymous"
 val := option.DefaultWith(none, func() string { return expensiveDefault() })
 
 // Contains: value equality check
-option.Contains(option.Some(42), 42) // => true
+option.Contains(option.Some(42), 42)    // => true
 option.Contains(option.None[int](), 42) // => false
+
+// Map2: combine two Options
+option.Map2(option.Some(2), option.Some(3), func(a, b int) int { return a + b }) // => Some(5)
+option.Map2(option.None[int](), option.Some(3), func(a, b int) int { return a + b }) // => None
 
 // OrElse: fallback if None
 resolved := option.OrElse(lookupCache(key), func() option.Option[string] {
@@ -141,8 +145,8 @@ resolved := option.OrElse(lookupCache(key), func() option.Option[string] {
 })
 
 // Flatten: unwrap Option[Option[T]]
-option.Flatten(option.Some(option.Some(42))) // => Some(42)
-option.Flatten(option.None[option.Option[int]]()) // => None
+option.Flatten(option.Some(option.Some(42)))          // => Some(42)
+option.Flatten(option.None[option.Option[int]]())     // => None
 
 // Chain optional lookups with Bind
 profile := option.Bind(findUser(id), func(u User) option.Option[Profile] {
@@ -182,6 +186,10 @@ user := result.OrElse(lookupPrimary(id), func(e error) result.Result[User, error
 // Flatten: unwrap Result[Result[T,E],E]
 result.Flatten(result.Ok[result.Result[int, string], string](result.Ok[int, string](42)))
 // => Ok(42)
+
+// Zip: combine two Results into a pair (first Err wins)
+result.Zip(result.Ok[int, string](1), result.Ok[string, string]("hi"))
+// => Ok({1, "hi"})
 
 // MapErr adds context to errors
 wrapped := result.MapErr(r5, func(e string) string {
