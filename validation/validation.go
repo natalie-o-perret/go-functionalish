@@ -32,12 +32,22 @@ type Validation[T, E any] struct {
 // -- constructors -------------------------------------------------------------
 
 // Success wraps a value in a successful Validation.
-func Success[T, E any](v T) Validation[T, E] {
+//
+// The error type E is listed first so callers can provide just E and let T be
+// inferred from the argument:
+//
+//	validation.Success[string](42) // Validation[int, string]
+func Success[E, T any](v T) Validation[T, E] {
 	return Validation[T, E]{value: v, ok: true}
 }
 
 // Failure creates a failed Validation with one or more errors.
 // Panics if no errors are provided.
+//
+// The value type T is listed first so callers can provide just T and let E be
+// inferred from the arguments:
+//
+//	validation.Failure[int]("bad") // Validation[int, string]
 func Failure[T, E any](errs ...E) Validation[T, E] {
 	if len(errs) == 0 {
 		panic("validation: Failure requires at least one error")
@@ -49,7 +59,7 @@ func Failure[T, E any](errs ...E) Validation[T, E] {
 // Ok becomes Success; Err becomes Failure with a single error.
 func FromResult[T, E any](r result.Result[T, E]) Validation[T, E] {
 	if r.IsOk() {
-		return Success[T, E](r.Unwrap())
+		return Success[E, T](r.Unwrap())
 	}
 	return Failure[T, E](r.UnwrapErr())
 }
@@ -58,7 +68,7 @@ func FromResult[T, E any](r result.Result[T, E]) Validation[T, E] {
 // Some becomes Success; None becomes Failure with the provided error.
 func FromOption[T, E any](o option.Option[T], errIfNone E) Validation[T, E] {
 	if o.IsSome() {
-		return Success[T, E](o.Unwrap())
+		return Success[E, T](o.Unwrap())
 	}
 	return Failure[T, E](errIfNone)
 }
@@ -124,7 +134,7 @@ func (v Validation[T, E]) ToOption() option.Option[T] {
 // Map applies fn to the success value, passing Failure unchanged.
 func Map[T, R, E any](v Validation[T, E], fn func(T) R) Validation[R, E] {
 	if v.ok {
-		return Success[R, E](fn(v.value))
+		return Success[E, R](fn(v.value))
 	}
 	return Validation[R, E]{errors: v.errors}
 }
@@ -132,7 +142,7 @@ func Map[T, R, E any](v Validation[T, E], fn func(T) R) Validation[R, E] {
 // MapError applies fn to each error, passing Success unchanged.
 func MapError[T, E, F any](v Validation[T, E], fn func(E) F) Validation[T, F] {
 	if v.ok {
-		return Success[T, F](v.value)
+		return Success[F, T](v.value)
 	}
 	mapped := make([]F, len(v.errors))
 	for i, e := range v.errors {
@@ -141,9 +151,9 @@ func MapError[T, E, F any](v Validation[T, E], fn func(E) F) Validation[T, F] {
 	return Validation[T, F]{errors: mapped}
 }
 
-// FlatMap applies fn to the success value, flattening the result.
+// Bind applies fn to the success value, flattening the result.
 // Note: this short-circuits like Result. For error accumulation, use Map2-Map5 or Apply.
-func FlatMap[T, R, E any](v Validation[T, E], fn func(T) Validation[R, E]) Validation[R, E] {
+func Bind[T, R, E any](v Validation[T, E], fn func(T) Validation[R, E]) Validation[R, E] {
 	if v.ok {
 		return fn(v.value)
 	}
@@ -157,7 +167,7 @@ func FlatMap[T, R, E any](v Validation[T, E], fn func(T) Validation[R, E]) Valid
 func Apply[T, R, E any](vFn Validation[func(T) R, E], vVal Validation[T, E]) Validation[R, E] {
 	switch {
 	case vFn.ok && vVal.ok:
-		return Success[R, E](vFn.value(vVal.value))
+		return Success[E, R](vFn.value(vVal.value))
 	case !vFn.ok && !vVal.ok:
 		return Validation[R, E]{errors: append(vFn.errors, vVal.errors...)}
 	case !vFn.ok:
@@ -174,7 +184,7 @@ func Map2[A, B, R, E any](
 	fn func(A, B) R,
 ) Validation[R, E] {
 	if va.ok && vb.ok {
-		return Success[R, E](fn(va.value, vb.value))
+		return Success[E, R](fn(va.value, vb.value))
 	}
 	return Validation[R, E]{errors: mergeErrors(va.errors, vb.errors)}
 }
@@ -187,7 +197,7 @@ func Map3[A, B, C, R, E any](
 	fn func(A, B, C) R,
 ) Validation[R, E] {
 	if va.ok && vb.ok && vc.ok {
-		return Success[R, E](fn(va.value, vb.value, vc.value))
+		return Success[E, R](fn(va.value, vb.value, vc.value))
 	}
 	return Validation[R, E]{errors: mergeErrors(va.errors, vb.errors, vc.errors)}
 }
@@ -201,7 +211,7 @@ func Map4[A, B, C, D, R, E any](
 	fn func(A, B, C, D) R,
 ) Validation[R, E] {
 	if va.ok && vb.ok && vc.ok && vd.ok {
-		return Success[R, E](fn(va.value, vb.value, vc.value, vd.value))
+		return Success[E, R](fn(va.value, vb.value, vc.value, vd.value))
 	}
 	return Validation[R, E]{errors: mergeErrors(va.errors, vb.errors, vc.errors, vd.errors)}
 }
@@ -216,7 +226,7 @@ func Map5[A, B, C, D, F, R, E any](
 	fn func(A, B, C, D, F) R,
 ) Validation[R, E] {
 	if va.ok && vb.ok && vc.ok && vd.ok && vf.ok {
-		return Success[R, E](fn(va.value, vb.value, vc.value, vd.value, vf.value))
+		return Success[E, R](fn(va.value, vb.value, vc.value, vd.value, vf.value))
 	}
 	return Validation[R, E]{errors: mergeErrors(va.errors, vb.errors, vc.errors, vd.errors, vf.errors)}
 }
@@ -239,7 +249,7 @@ func Sequence[T, E any](vs []Validation[T, E]) Validation[[]T, E] {
 	if errs != nil {
 		return Validation[[]T, E]{errors: errs}
 	}
-	return Success[[]T, E](values)
+	return Success[E, []T](values)
 }
 
 // Traverse applies fn to each item and sequences the results.
@@ -259,7 +269,7 @@ func Traverse[T, R, E any](items []T, fn func(T) Validation[R, E]) Validation[[]
 	if errs != nil {
 		return Validation[[]R, E]{errors: errs}
 	}
-	return Success[[]R, E](values)
+	return Success[E, []R](values)
 }
 
 // -- internal helpers ---------------------------------------------------------

@@ -3,6 +3,7 @@
 [![CI](https://github.com/natalie-o-perret/gof/actions/workflows/ci.yml/badge.svg)](https://github.com/natalie-o-perret/gof/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/natalie-o-perret/gof.svg)](https://pkg.go.dev/github.com/natalie-o-perret/gof)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Contributing](https://img.shields.io/badge/contributing-guide-blue)](CONTRIBUTING.md)
 
 A cohesive, opinionated, type-safe functional programming library for Go 1.24+.  
 Inspired by C# LINQ, F# sequences, Option, Result.  
@@ -10,11 +11,12 @@ No reflection. No `interface{}`. Pure generics and lazy by default.
 
 > [!NOTE]
 > Unapologetically lamely vibe-coded with excruciatingly expensive Claude Opus 4.6.
+> 
 > Unapologetically not "idiomatic Go."
 >
 > Go gave us (at last) generics 17 years after C# and 18 after Java (the  latter still erases them at runtime).
 > We're using them, for `Option[T]`, `Result[T,E]`, and lazy pipelines
-> instead of `if err != nil` sixty times with  per file.
+> instead of `if err != nil` sixty times per file.
 
 ## Packages
 
@@ -30,10 +32,11 @@ No reflection. No `interface{}`. Pure generics and lazy by default.
 
 ```go
 import (
-    "github.com/natalie/gof/seq"
-    "github.com/natalie/gof/option"
-    "github.com/natalie/gof/result"
-    "github.com/natalie/gof/pipe"
+    "github.com/natalie-o-perret/gof/seq"
+    "github.com/natalie-o-perret/gof/option"
+    "github.com/natalie-o-perret/gof/result"
+    "github.com/natalie-o-perret/gof/validation"
+    "github.com/natalie-o-perret/gof/pipe"
 )
 ```
 
@@ -92,8 +95,8 @@ option.Map(none, strings.ToUpper)           // => None
 name.UnwrapOr("anonymous") // => "Alice"
 none.UnwrapOr("anonymous") // => "anonymous"
 
-// Chain optional operations (FlatMap flattens)
-result := option.FlatMap(findUser(id), func(u User) option.Option[Profile] {
+// Chain optional lookups with Bind (F# Option.bind)
+profile := option.Bind(findUser(id), func(u User) option.Option[Profile] {
     return findProfile(u.ProfileID)
 })
 
@@ -106,23 +109,36 @@ firstModern := seq.OfSlice(cars).
 ### result : railway-oriented error handling
 
 ```go
-// Instead of (T, error) with checks everywhere
+// Wrap Go's (T, error) convention
 res := result.Try(func() (User, error) { return db.FindUser(id) })
 
-// Chain operations : Err short-circuits, no explicit checks
-final := result.FlatMap(
-    result.Map(res, enrichUser),
-    func(u User) result.Result[Response, error] { return serialize(u) },
+// Railway pipeline: chain Bind (may fail) and Map (pure transforms).
+// Once on the error track, every subsequent step is skipped.
+final := result.Map(
+    result.Bind(
+        result.Map(res, enrichUser),           // Map: pure transform
+        func(u User) result.Result[Response, error] {
+            return serialize(u)                // Bind: may fail
+        },
+    ),
+    addHeaders,                                // Map: pure transform
 )
 
-if final.IsOk() {
-    fmt.Println(final.Unwrap())
-} else {
-    fmt.Println("error:", final.UnwrapErr())
-}
+// Or write it as a linear pipeline (reads top-to-bottom):
+r1 := parseRequest(raw)                       // step 1: Bind
+r2 := result.Bind(r1, authenticate)           // step 2: Bind
+r3 := result.Map(r2, normalize)               // step 3: Map (pure)
+r4 := result.Bind(r3, save)                   // step 4: Bind
+r5 := result.Map(r4, formatResponse)          // step 5: Map (pure)
+// r5 is either Ok(response) or Err from whichever step failed first.
+
+// MapErr adds context to errors
+wrapped := result.MapErr(r5, func(e string) string {
+    return "request failed: " + e
+})
 
 // Interop with option
-opt := res.ToOption()                           // Ok => Some, Err => None
+opt := res.ToOption()                          // Ok => Some, Err => None
 res2 := result.FromOption(opt, errors.New("not found"))
 ```
 
@@ -145,6 +161,10 @@ validateAge := func(age int) validation.Validation[int, string] {
     }
     return validation.Success[int, string](age)
 }
+
+// Tip: the trailing type arg can be inferred from the value, so these are equivalent:
+//   validation.Failure[int, string]("bad")  ==  validation.Failure[int]("bad")
+//   validation.Success[int, string](42)     ==  validation.Success[string](42)
 
 // Map2-Map5: combine N validations, accumulating ALL errors
 user := validation.Map2(
@@ -174,48 +194,57 @@ r := v.ToResult()                                         // => Ok(42)
 
 ### pipe : threading values
 
+**Naming convention** - the suffix tells you the type contract:
+
+| Suffix | Variant                                | Type contract                                        | Example                 |
+|--------|----------------------------------------|------------------------------------------------------|-------------------------|
+| `N`    | `PipeN`, `ComposeN`                    | variadic, all steps `T → T` (same type)              | string transforms       |
+| `2..8` | `Pipe2`-`Pipe8`, `Compose2`-`Compose4` | fixed-arity, each step may change type (`A → B → C`) | parse + validate + save |
+
+The compiler enforces this: `PipeN` simply cannot accept a function whose output
+type differs from its input. `Pipe2`-`Pipe8` each declare distinct type params
+`A, B, C, ...` so the change is explicit in the signature itself.
+
 ```go
-// F#: input |> trim |> toLower |> validate
-validated := pipe.Pipe3(
+// Same-type chain (T → T): use PipeN - unlimited steps, all string → string
+processed := pipe.PipeN(
     rawInput,
     strings.TrimSpace,
     strings.ToLower,
-    validate,
+    strings.Title,
+    sanitize,
+)
+
+// Type-changing chain: use Pipe2-Pipe8
+validated := pipe.Pipe3(
+    rawInput,            // string
+    strings.TrimSpace,   // string → string
+    parse,               // string → int
+    validate,            // int    → error
 )
 ```
 
-#### Composing seq pipelines with pipe
+#### Pipelines longer than 8 type-changing steps
 
-Instead of nesting `seq.Then` calls, use `pipe.Pipe*` with curried `*Fn` helpers
-for a flat, linear style  - even when the element type changes mid-pipeline:
+Use `ComposeN`/`Compose2`-`Compose4` to collapse multiple steps into one slot:
 
 ```go
-// Nested Then (works, but awkward):
-seq.Then(
-    seq.Then(
-        seq.OfSlice(people).Filter(adult),
-        seq.MapFn(getName),
-    ),
-    seq.DistinctFn[string](),
-).SortWith(cmp.Compare).Truncate(3).ToSlice()
-
-// Flat pipe (same result):
 pipe.Pipe5(
     seq.OfSlice(people),
-    seq.FilterFn(adult),                       // Seq[Person] → Seq[Person]
-    seq.MapFn(getName),                        // Seq[Person] → Seq[string]
-    seq.DistinctFn[string](),                  // Seq[string] → Seq[string]
-    pipe.Compose(                              // group same-type steps
+    seq.FilterFn(adult),                          // Seq[Person] → Seq[Person]
+    seq.MapFn(getName),                           // Seq[Person] → Seq[string]
+    seq.DistinctFn[string](),                     // Seq[string] → Seq[string]
+    pipe.ComposeN(                                // group same-type steps into one slot
         seq.SortWithFn[string](cmp.Compare),
         seq.TruncateFn[string](3),
     ),
-    seq.ToSliceFn[string](),                   // Seq[string] → []string
+    seq.ToSliceFn[string](),                      // Seq[string] → []string
 )
 ```
 
-`pipe.Compose` merges consecutive same-type steps (`T→T`) into a single pipe
-slot. `pipe.Compose2`-`Compose4` do the same for type-changing steps (`A→B→C`).
-This lets you express arbitrarily long pipelines within `Pipe2`-`Pipe8`.
+`pipe.ComposeN` merges consecutive same-type steps (`T→T`) into one pipe slot.
+`pipe.Compose2`-`Compose4` do the same for type-changing steps (`A→B→C`).
+Together they cover pipelines of any length.
 
 ## Design notes
 

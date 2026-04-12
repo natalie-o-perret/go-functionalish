@@ -72,8 +72,8 @@ func Map[T, R any](o Option[T], fn func(T) R) Option[R] {
 	return None[R]()
 }
 
-// FlatMap applies fn to the value inside Some, flattening the resulting Option.
-func FlatMap[T, R any](o Option[T], fn func(T) Option[R]) Option[R] {
+// Bind applies fn to the value inside Some, flattening the resulting Option.
+func Bind[T, R any](o Option[T], fn func(T) Option[R]) Option[R] {
 	if o.valid {
 		return fn(o.value)
 	}

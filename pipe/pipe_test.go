@@ -20,3 +20,23 @@ func TestPipe3(t *testing.T) {
 		t.Fatalf("got %s", got)
 	}
 }
+
+func TestPipeEndoN(t *testing.T) {
+	// arbitrary number of same-type steps
+	got := pipe.PipeEndoN(
+		" hello world ",
+		strings.TrimSpace,
+		strings.ToUpper,
+		func(s string) string { return s + "!" },
+		func(s string) string { return "[" + s + "]" },
+		func(s string) string { return s + "!" },
+	)
+	if got != "[HELLO WORLD!]!" {
+		t.Fatalf("got %s", got)
+	}
+
+	// zero steps: value passes through unchanged
+	if pipe.PipeEndoN(42) != 42 {
+		t.Fatal("zero-step PipeEndoN should return value unchanged")
+	}
+}
