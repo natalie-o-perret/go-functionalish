@@ -21,9 +21,9 @@ func TestPipe3(t *testing.T) {
 	}
 }
 
-func TestPipeN(t *testing.T) {
+func TestPipeEndoN(t *testing.T) {
 	// arbitrary number of same-type steps
-	got := pipe.PipeN(
+	got := pipe.PipeEndoN(
 		" hello world ",
 		strings.TrimSpace,
 		strings.ToUpper,
@@ -36,7 +36,7 @@ func TestPipeN(t *testing.T) {
 	}
 
 	// zero steps: value passes through unchanged
-	if pipe.PipeN(42) != 42 {
-		t.Fatal("zero-step PipeN should return value unchanged")
+	if pipe.PipeEndoN(42) != 42 {
+		t.Fatal("zero-step PipeEndoN should return value unchanged")
 	}
 }
