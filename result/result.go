@@ -106,3 +106,36 @@ func FromOption[T, E any](o option.Option[T], errIfNone E) Result[T, E] {
 	}
 	return Err[T, E](errIfNone)
 }
+
+// Flatten unwraps a nested Result[Result[T,E],E] into Result[T,E].
+func Flatten[T, E any](r Result[Result[T, E], E]) Result[T, E] {
+	if r.ok {
+		return r.value
+	}
+	return Err[T, E](r.err)
+}
+
+// OrElse returns r if Ok, otherwise calls fn with the error to produce a fallback Result.
+func OrElse[T, E any](r Result[T, E], fn func(E) Result[T, E]) Result[T, E] {
+	if r.ok {
+		return r
+	}
+	return fn(r.err)
+}
+
+// Tee calls fn with the Ok value as a side effect and returns r unchanged.
+// Useful for logging or metrics in a pipeline without breaking the chain.
+func Tee[T, E any](r Result[T, E], fn func(T)) Result[T, E] {
+	if r.ok {
+		fn(r.value)
+	}
+	return r
+}
+
+// TeeErr calls fn with the Err value as a side effect and returns r unchanged.
+func TeeErr[T, E any](r Result[T, E], fn func(E)) Result[T, E] {
+	if !r.ok {
+		fn(r.err)
+	}
+	return r
+}

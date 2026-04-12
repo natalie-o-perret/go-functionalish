@@ -88,6 +88,36 @@ func Zip[T, U any](a Option[T], b Option[U]) Option[Pair[T, U]] {
 	return None[Pair[T, U]]()
 }
 
+// Flatten unwraps a nested Option[Option[T]] into Option[T].
+func Flatten[T any](o Option[Option[T]]) Option[T] {
+	if o.valid {
+		return o.value
+	}
+	return None[T]()
+}
+
+// OrElse returns o if Some, otherwise calls fn and returns its result.
+func OrElse[T any](o Option[T], fn func() Option[T]) Option[T] {
+	if o.valid {
+		return o
+	}
+	return fn()
+}
+
+// Contains reports whether o is Some and its value equals v.
+func Contains[T comparable](o Option[T], v T) bool {
+	return o.valid && o.value == v
+}
+
+// DefaultWith returns the value if Some, otherwise calls fn lazily.
+// Unlike UnwrapOr, the default is only computed if needed.
+func DefaultWith[T any](o Option[T], fn func() T) T {
+	if o.valid {
+		return o.value
+	}
+	return fn()
+}
+
 // Pair holds two values of potentially different types.
 type Pair[T, U any] struct {
 	First  T

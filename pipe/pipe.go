@@ -97,3 +97,20 @@ func Compose3[A, B, C, D any](f1 func(A) B, f2 func(B) C, f3 func(C) D) func(A) 
 func Compose4[A, B, C, D, E any](f1 func(A) B, f2 func(B) C, f3 func(C) D, f4 func(D) E) func(A) E {
 	return func(v A) E { return f4(f3(f2(f1(v)))) }
 }
+
+// Tap returns a function that calls fn on the value as a side effect, then returns it unchanged.
+// Useful for logging or metrics inside a pipeline without changing the type.
+//
+// Example:
+//
+//	pipe.Pipe3(
+//	    input,
+//	    pipe.Tap(func(s string) { log.Println("after trim:", s) }),
+//	    strings.ToUpper,
+//	)
+func Tap[T any](fn func(T)) func(T) T {
+	return func(v T) T {
+		fn(v)
+		return v
+	}
+}

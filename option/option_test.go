@@ -7,6 +7,50 @@ import (
 	"github.com/natalie-o-perret/gof/option"
 )
 
+func TestFlatten(t *testing.T) {
+	if option.Flatten(option.Some(option.Some(42))).Unwrap() != 42 {
+		t.Fatal("expected 42")
+	}
+	if option.Flatten(option.None[option.Option[int]]()).IsSome() {
+		t.Fatal("expected None")
+	}
+}
+
+func TestOrElse(t *testing.T) {
+	got := option.OrElse(option.Some(1), func() option.Option[int] { return option.Some(2) })
+	if got.Unwrap() != 1 {
+		t.Fatal("expected Some(1) to win")
+	}
+	got = option.OrElse(option.None[int](), func() option.Option[int] { return option.Some(2) })
+	if got.Unwrap() != 2 {
+		t.Fatal("expected fallback Some(2)")
+	}
+}
+
+func TestContains(t *testing.T) {
+	if !option.Contains(option.Some(42), 42) {
+		t.Fatal("expected true")
+	}
+	if option.Contains(option.Some(42), 99) {
+		t.Fatal("expected false")
+	}
+	if option.Contains(option.None[int](), 42) {
+		t.Fatal("expected false on None")
+	}
+}
+
+func TestDefaultWith(t *testing.T) {
+	called := false
+	got := option.DefaultWith(option.Some(1), func() int { called = true; return 99 })
+	if got != 1 || called {
+		t.Fatal("fn should not be called when Some")
+	}
+	got = option.DefaultWith(option.None[int](), func() int { return 99 })
+	if got != 99 {
+		t.Fatal("expected 99")
+	}
+}
+
 func TestSome(t *testing.T) {
 	o := option.Some(42)
 	if !o.IsSome() {

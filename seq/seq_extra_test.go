@@ -343,3 +343,84 @@ func TestMapFold(t *testing.T) {
 		t.Fatalf("state: %d", state)
 	}
 }
+func TestUnfold(t *testing.T) {
+	// first 6 fibonacci numbers
+	fibs := seq.Unfold([2]int{0, 1}, func(s [2]int) option.Option[seq.Pair[int, [2]int]] {
+		if s[0] > 8 {
+			return option.None[seq.Pair[int, [2]int]]()
+		}
+		return option.Some(seq.Pair[int, [2]int]{First: s[0], Second: [2]int{s[1], s[0] + s[1]}})
+	}).ToSlice()
+	want := []int{0, 1, 1, 2, 3, 5, 8}
+	if len(fibs) != len(want) {
+		t.Fatalf("got %v", fibs)
+	}
+	for i, v := range fibs {
+		if v != want[i] {
+			t.Fatalf("fibs[%d] = %d, want %d", i, v, want[i])
+		}
+	}
+}
+func TestRangeStep(t *testing.T) {
+	got := seq.RangeStep(0, 10, 2).ToSlice()
+	want := []int{0, 2, 4, 6, 8}
+	if len(got) != len(want) {
+		t.Fatalf("got %v", got)
+	}
+	for i, v := range got {
+		if v != want[i] {
+			t.Fatalf("[%d] got %d want %d", i, v, want[i])
+		}
+	}
+	// descending
+	desc := seq.RangeStep(5, 0, -1).ToSlice()
+	if len(desc) != 5 || desc[0] != 5 || desc[4] != 1 {
+		t.Fatalf("descending got %v", desc)
+	}
+}
+func TestOfMap(t *testing.T) {
+	m := map[string]int{"a": 1, "b": 2}
+	counts := seq.CountByKey(seq.OfMap(m), func(p seq.Pair[string, int]) string { return p.First })
+	if counts["a"] != 1 || counts["b"] != 1 {
+		t.Fatalf("got %v", counts)
+	}
+}
+func TestOfOption(t *testing.T) {
+	got := seq.OfOption(option.Some(42)).ToSlice()
+	if len(got) != 1 || got[0] != 42 {
+		t.Fatalf("got %v", got)
+	}
+	if len(seq.OfOption(option.None[int]()).ToSlice()) != 0 {
+		t.Fatal("expected empty")
+	}
+}
+func TestPartition(t *testing.T) {
+	even, odd := seq.Partition(seq.Range(1, 7), func(n int) bool { return n%2 == 0 })
+	if len(even) != 3 || even[0] != 2 {
+		t.Fatalf("even: %v", even)
+	}
+	if len(odd) != 3 || odd[0] != 1 {
+		t.Fatalf("odd: %v", odd)
+	}
+}
+func TestCountByKey(t *testing.T) {
+	words := seq.OfSlice([]string{"a", "b", "a", "c", "b", "a"})
+	counts := seq.CountByKey(words, func(s string) string { return s })
+	if counts["a"] != 3 || counts["b"] != 2 || counts["c"] != 1 {
+		t.Fatalf("got %v", counts)
+	}
+}
+func TestInterleave(t *testing.T) {
+	a := seq.OfSlice([]int{1, 3, 5})
+	b := seq.OfSlice([]int{2, 4, 6})
+	got := seq.Interleave(a, b).ToSlice()
+	want := []int{1, 2, 3, 4, 5, 6}
+	if len(got) != len(want) {
+		t.Fatalf("got %v", got)
+	}
+	for i, v := range got {
+		if v != want[i] {
+			t.Fatalf("[%d] got %d want %d", i, v, want[i])
+		}
+	}
+}
