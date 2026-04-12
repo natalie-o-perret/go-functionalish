@@ -194,61 +194,57 @@ r := v.ToResult()                                         // => Ok(42)
 
 ### pipe : threading values
 
-```go
-// F#: input |> trim |> toLower |> validate
-validated := pipe.Pipe3(
-    rawInput,
-    strings.TrimSpace,
-    strings.ToLower,
-    validate,
-)
+**Naming convention** - the suffix tells you the type contract:
 
-// PipeN: variadic, unlimited steps - but all functions must share the same type T→T.
-// Use this when every step is a transform within the same type.
+| Suffix | Variant                                | Type contract                                        | Example                 |
+|--------|----------------------------------------|------------------------------------------------------|-------------------------|
+| `N`    | `PipeN`, `ComposeN`                    | variadic, all steps `T → T` (same type)              | string transforms       |
+| `2..8` | `Pipe2`-`Pipe8`, `Compose2`-`Compose4` | fixed-arity, each step may change type (`A → B → C`) | parse + validate + save |
+
+The compiler enforces this: `PipeN` simply cannot accept a function whose output
+type differs from its input. `Pipe2`-`Pipe8` each declare distinct type params
+`A, B, C, ...` so the change is explicit in the signature itself.
+
+```go
+// Same-type chain (T → T): use PipeN - unlimited steps, all string → string
 processed := pipe.PipeN(
     rawInput,
     strings.TrimSpace,
     strings.ToLower,
     strings.Title,
     sanitize,
-    normalize,
+)
+
+// Type-changing chain: use Pipe2-Pipe8
+validated := pipe.Pipe3(
+    rawInput,            // string
+    strings.TrimSpace,   // string → string
+    parse,               // string → int
+    validate,            // int    → error
 )
 ```
 
-#### Pipelines where the type changes between steps
+#### Pipelines longer than 8 type-changing steps
 
-When steps change the type (e.g. `string` to `int` to `MyStruct`), Go's type system
-requires each type to be a distinct type parameter - so variadic isn't possible.
-`Pipe2`-`Pipe8` handle up to 8 type-changing steps. To go beyond 8, use
-`Compose`/`Compose2`-`Compose4` to collapse multiple steps into one slot:
+Use `ComposeN`/`Compose2`-`Compose4` to collapse multiple steps into one slot:
 
 ```go
-// Nested Then (works, but awkward):
-seq.Then(
-    seq.Then(
-        seq.OfSlice(people).Filter(adult),
-        seq.MapFn(getName),
-    ),
-    seq.DistinctFn[string](),
-).SortWith(cmp.Compare).Truncate(3).ToSlice()
-
-// Flat pipe (same result):
 pipe.Pipe5(
     seq.OfSlice(people),
-    seq.FilterFn(adult),                       // Seq[Person] → Seq[Person]
-    seq.MapFn(getName),                        // Seq[Person] → Seq[string]
-    seq.DistinctFn[string](),                  // Seq[string] → Seq[string]
-    pipe.Compose(                              // group same-type steps
+    seq.FilterFn(adult),                          // Seq[Person] → Seq[Person]
+    seq.MapFn(getName),                           // Seq[Person] → Seq[string]
+    seq.DistinctFn[string](),                     // Seq[string] → Seq[string]
+    pipe.ComposeN(                                // group same-type steps into one slot
         seq.SortWithFn[string](cmp.Compare),
         seq.TruncateFn[string](3),
     ),
-    seq.ToSliceFn[string](),                   // Seq[string] → []string
+    seq.ToSliceFn[string](),                      // Seq[string] → []string
 )
 ```
 
-`pipe.Compose` merges consecutive same-type steps (`T→T`) into a single pipe
-slot. `pipe.Compose2`-`Compose4` do the same for type-changing steps (`A→B→C`).
-Together with `PipeN` for same-type chains, this covers pipelines of any length.
+`pipe.ComposeN` merges consecutive same-type steps (`T→T`) into one pipe slot.
+`pipe.Compose2`-`Compose4` do the same for type-changing steps (`A→B→C`).
+Together they cover pipelines of any length.
 
 ## Design notes
 

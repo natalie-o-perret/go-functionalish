@@ -49,8 +49,13 @@ func Pipe8[A, B, C, D, E, F, G, H, I any](v A, f1 func(A) B, f2 func(B) C, f3 fu
 
 // PipeN threads v through an arbitrary number of same-type functions.
 // All functions must share the same input and output type T.
+//
+// Naming convention:
+//   - *N  variants (PipeN, ComposeN)  - variadic, same-type only (T -> T)
+//   - *2..8 variants (Pipe2-Pipe8, Compose2-Compose4) - fixed-arity, type-changing (A -> B -> ...)
+//
 // For pipelines where the type changes between steps, use Pipe2-Pipe8
-// with Compose/Compose2-Compose4 to collapse multiple steps into one slot.
+// with ComposeN/Compose2-Compose4 to collapse multiple steps into one slot.
 func PipeN[T any](v T, fns ...func(T) T) T {
 	for _, fn := range fns {
 		v = fn(v)
@@ -58,18 +63,19 @@ func PipeN[T any](v T, fns ...func(T) T) T {
 	return v
 }
 
-// Compose merges multiple same-type transform functions into a single function.
+// ComposeN merges multiple same-type transform functions into a single function.
+// The N suffix signals that all steps must share the same type T (same-type / endomorphic).
 // Useful for collapsing consecutive same-type pipeline steps into one pipe stage.
 //
 // Example:
 //
 //	pipe.Pipe3(
 //	    input,
-//	    pipe.Compose(step1, step2, step3),  // all T → T
-//	    transformType,                       // T → R
-//	    terminal,                            // R → result
+//	    pipe.ComposeN(step1, step2, step3),  // all T → T
+//	    transformType,                        // T → R
+//	    terminal,                             // R → result
 //	)
-func Compose[T any](fns ...func(T) T) func(T) T {
+func ComposeN[T any](fns ...func(T) T) func(T) T {
 	return func(v T) T {
 		for _, fn := range fns {
 			v = fn(v)

@@ -67,7 +67,7 @@ func BenchmarkMedium_Pipe(b *testing.B) {
 	for b.Loop() {
 		sink = pipe.Pipe2(
 			seq.OfSlice(benchData),
-			pipe.Compose(
+			pipe.ComposeN(
 				seq.FilterFn(func(n int) bool { return n%2 == 0 }),
 				seq.ExcludeFn(func(n int) bool { return n%10 == 0 }),
 				seq.SkipFn[int](10),
@@ -105,7 +105,7 @@ func BenchmarkLarge_Pipe(b *testing.B) {
 	for b.Loop() {
 		sink = pipe.Pipe2(
 			seq.OfSlice(benchData),
-			pipe.Compose(
+			pipe.ComposeN(
 				seq.FilterFn(func(n int) bool { return n%2 == 0 }),
 				seq.ExcludeFn(func(n int) bool { return n%10 == 0 }),
 				seq.SkipFn[int](5),
@@ -124,7 +124,7 @@ func BenchmarkLarge_Pipe(b *testing.B) {
 
 // ── compose overhead in isolation ─────────────────────────────────────────────
 
-func BenchmarkCompose_Overhead(b *testing.B) {
+func BenchmarkComposeN_Overhead(b *testing.B) {
 	// 5 composed same-type steps vs 5 direct method calls
 	b.Run("direct", func(b *testing.B) {
 		for b.Loop() {
@@ -141,7 +141,7 @@ func BenchmarkCompose_Overhead(b *testing.B) {
 		for b.Loop() {
 			sink = pipe.Pipe2(
 				seq.OfSlice(benchData),
-				pipe.Compose(
+				pipe.ComposeN(
 					seq.FilterFn(func(n int) bool { return n > 100 }),
 					seq.SkipFn[int](10),
 					seq.TruncateFn[int](500),
