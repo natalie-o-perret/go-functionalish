@@ -198,16 +198,16 @@ r := v.ToResult()                                         // => Ok(42)
 
 | Suffix | Variant                                | Type contract                                        | Example                 |
 |--------|----------------------------------------|------------------------------------------------------|-------------------------|
-| `N`    | `PipeN`, `ComposeN`                    | variadic, all steps `T → T` (same type)              | string transforms       |
-| `2..8` | `Pipe2`-`Pipe8`, `Compose2`-`Compose4` | fixed-arity, each step may change type (`A → B → C`) | parse + validate + save |
+ `EndoN` `PipeEndoN`, `ComposeEndoN`                     variadic, all steps `T => T` (same type, endomorphic)  string transforms       
+| `2..8` | `Pipe2`-`Pipe8`, `Compose2`-`Compose4` | fixed-arity, each step may change type (`A => B => C`) | parse + validate + save |
 
-The compiler enforces this: `PipeN` simply cannot accept a function whose output
+The compiler enforces this: `PipeEndoN` simply cannot accept a function whose output
 type differs from its input. `Pipe2`-`Pipe8` each declare distinct type params
 `A, B, C, ...` so the change is explicit in the signature itself.
 
 ```go
-// Same-type chain (T → T): use PipeN - unlimited steps, all string → string
-processed := pipe.PipeN(
+// Same-type chain (T => T): use PipeEndoN - unlimited steps, all string => string
+processed := pipe.PipeEndoN(
     rawInput,
     strings.TrimSpace,
     strings.ToLower,
@@ -218,32 +218,32 @@ processed := pipe.PipeN(
 // Type-changing chain: use Pipe2-Pipe8
 validated := pipe.Pipe3(
     rawInput,            // string
-    strings.TrimSpace,   // string → string
-    parse,               // string → int
-    validate,            // int    → error
+    strings.TrimSpace,   // string => string
+    parse,               // string => int
+    validate,            // int    => error
 )
 ```
 
 #### Pipelines longer than 8 type-changing steps
 
-Use `ComposeN`/`Compose2`-`Compose4` to collapse multiple steps into one slot:
+Use `ComposeEndoN`/`Compose2`-`Compose4` to collapse multiple steps into one slot:
 
 ```go
 pipe.Pipe5(
     seq.OfSlice(people),
-    seq.FilterFn(adult),                          // Seq[Person] → Seq[Person]
-    seq.MapFn(getName),                           // Seq[Person] → Seq[string]
-    seq.DistinctFn[string](),                     // Seq[string] → Seq[string]
-    pipe.ComposeN(                                // group same-type steps into one slot
+    seq.FilterFn(adult),                          // Seq[Person] => Seq[Person]
+    seq.MapFn(getName),                           // Seq[Person] => Seq[string]
+    seq.DistinctFn[string](),                     // Seq[string] => Seq[string]
+    pipe.ComposeEndoN(                                // group same-type steps into one slot
         seq.SortWithFn[string](cmp.Compare),
         seq.TruncateFn[string](3),
     ),
-    seq.ToSliceFn[string](),                      // Seq[string] → []string
+    seq.ToSliceFn[string](),                      // Seq[string] => []string
 )
 ```
 
-`pipe.ComposeN` merges consecutive same-type steps (`T→T`) into one pipe slot.
-`pipe.Compose2`-`Compose4` do the same for type-changing steps (`A→B→C`).
+`pipe.ComposeEndoN` merges consecutive same-type steps (`T=>T`) into one pipe slot.
+`pipe.Compose2`-`Compose4` do the same for type-changing steps (`A=>B=>C`).
 Together they cover pipelines of any length.
 
 ## Design notes
