@@ -47,18 +47,33 @@ func Pipe8[A, B, C, D, E, F, G, H, I any](v A, f1 func(A) B, f2 func(B) C, f3 fu
 	return f8(f7(f6(f5(f4(f3(f2(f1(v))))))))
 }
 
-// Compose merges multiple same-type transform functions into a single function.
+// PipeEndoN threads v through an arbitrary number of same-type (endomorphic) functions.
+// All functions must share the same input and output type T.
+//
+// Naming convention:
+//   - *EndoN variants (PipeEndoN, ComposeEndoN) : variadic, same-type only (T => T)
+//   - *2..8 variants (Pipe2-Pipe8, Compose2-Compose4) : fixed-arity, type-changing (A => B => ...)
+//
+// For pipelines where the type changes between steps, use Pipe2-Pipe8
+// with ComposeEndoN/Compose2-Compose4 to collapse multiple steps into one slot.
+func PipeEndoN[T any](v T, fns ...func(T) T) T {
+	for _, fn := range fns {
+		v = fn(v)
+	}
+	return v
+}
+
+// ComposeEndoN merges multiple same-type (endomorphic) transform functions into a single function.
 // Useful for collapsing consecutive same-type pipeline steps into one pipe stage.
 //
 // Example:
 //
 //	pipe.Pipe3(
 //	    input,
-//	    pipe.Compose(step1, step2, step3),  // all T → T
-//	    transformType,                       // T → R
-//	    terminal,                            // R → result
-//	)
-func Compose[T any](fns ...func(T) T) func(T) T {
+//	    pipe.ComposeEndoN(step1, step2, step3),  // all T => T
+//	    transformType,                            // T => R
+//	    ...
+func ComposeEndoN[T any](fns ...func(T) T) func(T) T {
 	return func(v T) T {
 		for _, fn := range fns {
 			v = fn(v)
@@ -67,18 +82,35 @@ func Compose[T any](fns ...func(T) T) func(T) T {
 	}
 }
 
-// Compose2 composes two functions: A → B → C into A → C.
+// Compose2 composes two functions: A => B => C into A => C.
 // Useful for collapsing type-changing steps into one pipe stage.
 func Compose2[A, B, C any](f1 func(A) B, f2 func(B) C) func(A) C {
 	return func(v A) C { return f2(f1(v)) }
 }
 
-// Compose3 composes three functions: A → B → C → D into A → D.
+// Compose3 composes three functions: A => B => C => D into A => D.
 func Compose3[A, B, C, D any](f1 func(A) B, f2 func(B) C, f3 func(C) D) func(A) D {
 	return func(v A) D { return f3(f2(f1(v))) }
 }
 
-// Compose4 composes four functions: A → B → C → D → E into A → E.
+// Compose4 composes four functions: A => B => C => D => E into A => E.
 func Compose4[A, B, C, D, E any](f1 func(A) B, f2 func(B) C, f3 func(C) D, f4 func(D) E) func(A) E {
 	return func(v A) E { return f4(f3(f2(f1(v)))) }
+}
+
+// Tap returns a function that calls fn on the value as a side effect, then returns it unchanged.
+// Useful for logging or metrics inside a pipeline without changing the type.
+//
+// Example:
+//
+//	pipe.Pipe3(
+//	    input,
+//	    pipe.Tap(func(s string) { log.Println("after trim:", s) }),
+//	    strings.ToUpper,
+//	)
+func Tap[T any](fn func(T)) func(T) T {
+	return func(v T) T {
+		fn(v)
+		return v
+	}
 }

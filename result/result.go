@@ -91,8 +91,8 @@ func MapErr[T, E, F any](r Result[T, E], fn func(E) F) Result[T, F] {
 	return Ok[T, F](r.value)
 }
 
-// FlatMap applies fn to the Ok value, flattening the resulting Result.
-func FlatMap[T, U, E any](r Result[T, E], fn func(T) Result[U, E]) Result[U, E] {
+// Bind applies fn to the Ok value, flattening the resulting Result.
+func Bind[T, U, E any](r Result[T, E], fn func(T) Result[U, E]) Result[U, E] {
 	if r.ok {
 		return fn(r.value)
 	}
@@ -105,4 +105,49 @@ func FromOption[T, E any](o option.Option[T], errIfNone E) Result[T, E] {
 		return Ok[T, E](o.Unwrap())
 	}
 	return Err[T, E](errIfNone)
+}
+
+// Zip combines two Results into a Result of a pair.
+// Returns the first Err encountered if either is Err.
+func Zip[T, U, E any](a Result[T, E], b Result[U, E]) Result[option.Pair[T, U], E] {
+	if a.ok && b.ok {
+		return Ok[option.Pair[T, U], E](option.Pair[T, U]{First: a.value, Second: b.value})
+	}
+	if !a.ok {
+		return Err[option.Pair[T, U], E](a.err)
+	}
+	return Err[option.Pair[T, U], E](b.err)
+}
+
+// Flatten unwraps a nested Result[Result[T,E],E] into Result[T,E].
+func Flatten[T, E any](r Result[Result[T, E], E]) Result[T, E] {
+	if r.ok {
+		return r.value
+	}
+	return Err[T, E](r.err)
+}
+
+// OrElse returns r if Ok, otherwise calls fn with the error to produce a fallback Result.
+func OrElse[T, E any](r Result[T, E], fn func(E) Result[T, E]) Result[T, E] {
+	if r.ok {
+		return r
+	}
+	return fn(r.err)
+}
+
+// Tee calls fn with the Ok value as a side effect and returns r unchanged.
+// Useful for logging or metrics in a pipeline without breaking the chain.
+func Tee[T, E any](r Result[T, E], fn func(T)) Result[T, E] {
+	if r.ok {
+		fn(r.value)
+	}
+	return r
+}
+
+// TeeErr calls fn with the Err value as a side effect and returns r unchanged.
+func TeeErr[T, E any](r Result[T, E], fn func(E)) Result[T, E] {
+	if !r.ok {
+		fn(r.err)
+	}
+	return r
 }

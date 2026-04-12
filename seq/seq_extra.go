@@ -745,3 +745,112 @@ func MapFold[S, T, R any](s Seq[T], initial S, fn func(S, T) (R, S)) ([]R, S) {
 	}
 	return results, acc
 }
+
+// ── additional constructors ───────────────────────────────────────────────────
+
+// Unfold generates a Seq by repeatedly applying fn to a seed state.
+// fn returns None to stop, or Some(Pair{value, nextState}) to continue.
+//
+// Example: Fibonacci
+//
+//	fibs := seq.Unfold([2]int{0, 1}, func(s [2]int) option.Option[seq.Pair[int, [2]int]] {
+//	    return option.Some(seq.Pair[int, [2]int]{First: s[0], Second: [2]int{s[1], s[0] + s[1]}})
+//	})
+func Unfold[S, T any](seed S, fn func(S) option.Option[Pair[T, S]]) Seq[T] {
+	return func(yield func(T) bool) {
+		state := seed
+		for {
+			result := fn(state)
+			if result.IsNone() {
+				return
+			}
+			p := result.Unwrap()
+			if !yield(p.First) {
+				return
+			}
+			state = p.Second
+		}
+	}
+}
+
+// RangeStep produces a Seq of integers from start (inclusive) to end (exclusive) with a given step.
+// Panics if step is zero.
+func RangeStep(start, end, step int) Seq[int] {
+	if step == 0 {
+		panic("seq: RangeStep step must not be zero")
+	}
+	return func(yield func(int) bool) {
+		for i := start; (step > 0 && i < end) || (step < 0 && i > end); i += step {
+			if !yield(i) {
+				return
+			}
+		}
+	}
+}
+
+// OfMap returns a Seq of Pair[K,V] from a map. Iteration order is not guaranteed.
+func OfMap[K comparable, V any](m map[K]V) Seq[Pair[K, V]] {
+	return func(yield func(Pair[K, V]) bool) {
+		for k, v := range m {
+			if !yield(Pair[K, V]{First: k, Second: v}) {
+				return
+			}
+		}
+	}
+}
+
+// OfOption returns a Seq with one element if o is Some, or an empty Seq if None.
+func OfOption[T any](o option.Option[T]) Seq[T] {
+	if o.IsSome() {
+		return Singleton(o.Unwrap())
+	}
+	return Empty[T]()
+}
+
+// ── additional pipeline functions ─────────────────────────────────────────────
+
+// Interleave alternates elements from a and b: [a1,b1,a2,b2,...].
+// Stops when either sequence is exhausted.
+func Interleave[T any](a, b Seq[T]) Seq[T] {
+	return func(yield func(T) bool) {
+		nextB, stopB := iter.Pull(iter.Seq[T](b))
+		defer stopB()
+		for va := range a {
+			if !yield(va) {
+				return
+			}
+			vb, ok := nextB()
+			if !ok {
+				return
+			}
+			if !yield(vb) {
+				return
+			}
+		}
+	}
+}
+
+// ── additional terminal functions ─────────────────────────────────────────────
+
+// Partition splits s into two slices in one pass:
+// the first contains elements where fn returns true, the second where fn returns false.
+func Partition[T any](s Seq[T], fn func(T) bool) ([]T, []T) {
+	var yes, no []T
+	for v := range s {
+		if fn(v) {
+			yes = append(yes, v)
+		} else {
+			no = append(no, v)
+		}
+	}
+	return yes, no
+}
+
+// CountByKey counts occurrences of each key produced by fn.
+func CountByKey[T any, K comparable](s Seq[T], fn func(T) K) map[K]int {
+	counts := make(map[K]int)
+	for v := range s {
+		counts[fn(v)]++
+	}
+	return counts
+}

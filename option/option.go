@@ -72,8 +72,8 @@ func Map[T, R any](o Option[T], fn func(T) R) Option[R] {
 	return None[R]()
 }
 
-// FlatMap applies fn to the value inside Some, flattening the resulting Option.
-func FlatMap[T, R any](o Option[T], fn func(T) Option[R]) Option[R] {
+// Bind applies fn to the value inside Some, flattening the resulting Option.
+func Bind[T, R any](o Option[T], fn func(T) Option[R]) Option[R] {
 	if o.valid {
 		return fn(o.value)
 	}
@@ -86,6 +86,44 @@ func Zip[T, U any](a Option[T], b Option[U]) Option[Pair[T, U]] {
 		return Some(Pair[T, U]{First: a.value, Second: b.value})
 	}
 	return None[Pair[T, U]]()
+}
+
+// Map2 applies fn to the values of two Options. Returns None if either is None.
+func Map2[A, B, C any](a Option[A], b Option[B], fn func(A, B) C) Option[C] {
+	if a.valid && b.valid {
+		return Some(fn(a.value, b.value))
+	}
+	return None[C]()
+}
+
+// Flatten unwraps a nested Option[Option[T]] into Option[T].
+func Flatten[T any](o Option[Option[T]]) Option[T] {
+	if o.valid {
+		return o.value
+	}
+	return None[T]()
+}
+
+// OrElse returns o if Some, otherwise calls fn and returns its result.
+func OrElse[T any](o Option[T], fn func() Option[T]) Option[T] {
+	if o.valid {
+		return o
+	}
+	return fn()
+}
+
+// Contains reports whether o is Some and its value equals v.
+func Contains[T comparable](o Option[T], v T) bool {
+	return o.valid && o.value == v
+}
+
+// DefaultWith returns the value if Some, otherwise calls fn lazily.
+// Unlike UnwrapOr, the default is only computed if needed.
+func DefaultWith[T any](o Option[T], fn func() T) T {
+	if o.valid {
+		return o.value
+	}
+	return fn()
 }
 
 // Pair holds two values of potentially different types.

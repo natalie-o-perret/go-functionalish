@@ -264,7 +264,7 @@ func TestPipeline20Steps(t *testing.T) {
 		seq.Range(1, 100),
 
 		// Steps 1-15: all Seq[int] → Seq[int]
-		pipe.Compose(
+		pipe.ComposeEndoN(
 			seq.FilterFn(func(n int) bool { return n%2 == 0 }),   // 1
 			seq.ExcludeFn(func(n int) bool { return n%10 == 0 }), // 2
 			seq.SkipFn[int](3), // 3
@@ -291,7 +291,7 @@ func TestPipeline20Steps(t *testing.T) {
 		),
 
 		// Steps 18-19: Seq[string] → Seq[string]
-		pipe.Compose(
+		pipe.ComposeEndoN(
 			seq.RevFn[string](),       // 18
 			seq.TruncateFn[string](5), // 19
 		),
