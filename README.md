@@ -6,15 +6,14 @@
 [![Contributing](https://img.shields.io/badge/contributing-guide-blue)](CONTRIBUTING.md)
 
 A cohesive, opinionated, type-safe functional programming library for Go 1.24+.  
-Inspired by C# LINQ, F# sequences, Option, Result.  
 No reflection. No `interface{}`. Pure generics and lazy by default.
 
 > [!NOTE]
-> Unapologetically lamely vibe-coded with excruciatingly expensive Claude Opus 4.6.
-> 
+> Unapologetically vibe-coded with Claude Opus 4.6.
+>
 > Unapologetically not "idiomatic Go."
 >
-> Go gave us (at last) generics 17 years after C# and 18 after Java (the  latter still erases them at runtime).
+> Go gave us generics 17 years after C# and 18 after Java (the latter still erases them at runtime).
 > We're using them, for `Option[T]`, `Result[T,E]`, and lazy pipelines
 > instead of `if err != nil` sixty times per file.
 
@@ -73,13 +72,47 @@ count := seq.OfSlice(cars).CountBy(func(c Car) bool { return c.Year >= 2015 })
 squares := seq.Map(seq.Range(1, 6), func(n int) int { return n * n }).ToSlice()
 // => [1 4 9 16 25]
 
-// Zip
+// RangeStep: custom step, supports descending
+evens := seq.RangeStep(0, 10, 2).ToSlice()  // => [0 2 4 6 8]
+countdown := seq.RangeStep(5, 0, -1).ToSlice() // => [5 4 3 2 1]
+
+// Zip / Interleave
 pairs := seq.Zip(seq.OfSlice([]int{1, 2, 3}), seq.OfSlice([]string{"a", "b", "c"})).ToSlice()
 // => [{1 a} {2 b} {3 c}]
+
+merged := seq.Interleave(seq.OfSlice([]int{1, 3, 5}), seq.OfSlice([]int{2, 4, 6})).ToSlice()
+// => [1 2 3 4 5 6]
 
 // Cycle + Truncate (infinite sequences)
 pattern := seq.OfSlice([]string{"ping", "pong"}).Cycle().Truncate(5).ToSlice()
 // => ["ping", "pong", "ping", "pong", "ping"]
+
+// Unfold: generate from a seed state (e.g. Fibonacci)
+fibs := seq.Unfold([2]int{0, 1}, func(s [2]int) option.Option[seq.Pair[int, [2]int]] {
+    if s[0] > 20 {
+        return option.None[seq.Pair[int, [2]int]]()
+    }
+    return option.Some(seq.Pair[int, [2]int]{First: s[0], Second: [2]int{s[1], s[0] + s[1]}})
+}).ToSlice()
+// => [0 1 1 2 3 5 8 13]
+
+// Partition: one pass, two slices
+evens, odds := seq.Partition(seq.Range(1, 7), func(n int) bool { return n%2 == 0 })
+// evens => [2 4 6],  odds => [1 3 5]
+
+// OfMap: iterate over a map
+counts := seq.CountByKey(seq.OfMap(map[string]int{"a": 1, "b": 2}),
+    func(p seq.Pair[string, int]) string { return p.First })
+// => map[a:1 b:1]
+
+// CountByKey: occurrence counts
+freq := seq.CountByKey(seq.OfSlice([]string{"a", "b", "a", "c", "a", "b"}),
+    func(s string) string { return s })
+// => map[a:3 b:2 c:1]
+
+// OfOption: lift an Option into a Seq
+seq.OfOption(option.Some(42)).ToSlice()   // => [42]
+seq.OfOption(option.None[int]()).ToSlice() // => []
 ```
 
 ### option: explicit optionality
@@ -95,7 +128,27 @@ option.Map(none, strings.ToUpper)           // => None
 name.UnwrapOr("anonymous") // => "Alice"
 none.UnwrapOr("anonymous") // => "anonymous"
 
-// Chain optional lookups with Bind (F# Option.bind)
+// DefaultWith: lazy default — fn is only called when None
+val := option.DefaultWith(none, func() string { return expensiveDefault() })
+
+// Contains: value equality check
+option.Contains(option.Some(42), 42)    // => true
+option.Contains(option.None[int](), 42) // => false
+
+// Map2: combine two Options
+option.Map2(option.Some(2), option.Some(3), func(a, b int) int { return a + b }) // => Some(5)
+option.Map2(option.None[int](), option.Some(3), func(a, b int) int { return a + b }) // => None
+
+// OrElse: fallback if None
+resolved := option.OrElse(lookupCache(key), func() option.Option[string] {
+    return lookupDB(key)
+})
+
+// Flatten: unwrap Option[Option[T]]
+option.Flatten(option.Some(option.Some(42)))          // => Some(42)
+option.Flatten(option.None[option.Option[int]]())     // => None
+
+// Chain optional lookups with Bind
 profile := option.Bind(findUser(id), func(u User) option.Option[Profile] {
     return findProfile(u.ProfileID)
 })
@@ -114,23 +167,29 @@ res := result.Try(func() (User, error) { return db.FindUser(id) })
 
 // Railway pipeline: chain Bind (may fail) and Map (pure transforms).
 // Once on the error track, every subsequent step is skipped.
-final := result.Map(
-    result.Bind(
-        result.Map(res, enrichUser),           // Map: pure transform
-        func(u User) result.Result[Response, error] {
-            return serialize(u)                // Bind: may fail
-        },
-    ),
-    addHeaders,                                // Map: pure transform
-)
-
-// Or write it as a linear pipeline (reads top-to-bottom):
 r1 := parseRequest(raw)                       // step 1: Bind
 r2 := result.Bind(r1, authenticate)           // step 2: Bind
 r3 := result.Map(r2, normalize)               // step 3: Map (pure)
 r4 := result.Bind(r3, save)                   // step 4: Bind
 r5 := result.Map(r4, formatResponse)          // step 5: Map (pure)
 // r5 is either Ok(response) or Err from whichever step failed first.
+
+// Tee / TeeErr: side-effects without breaking the chain — great for logging
+r := result.Tee(r3, func(v Request) { log.Printf("normalised: %v", v) })
+r = result.TeeErr(r, func(e string) { log.Printf("failed: %s", e) })
+
+// OrElse: try a fallback on Err
+user := result.OrElse(lookupPrimary(id), func(e error) result.Result[User, error] {
+    return lookupReplica(id)
+})
+
+// Flatten: unwrap Result[Result[T,E],E]
+result.Flatten(result.Ok[result.Result[int, string], string](result.Ok[int, string](42)))
+// => Ok(42)
+
+// Zip: combine two Results into a pair (first Err wins)
+result.Zip(result.Ok[int, string](1), result.Ok[string, string]("hi"))
+// => Ok({1, "hi"})
 
 // MapErr adds context to errors
 wrapped := result.MapErr(r5, func(e string) string {
@@ -142,64 +201,14 @@ opt := res.ToOption()                          // Ok => Some, Err => None
 res2 := result.FromOption(opt, errors.New("not found"))
 ```
 
-### validation : applicative error accumulation
-
-```go
-// Unlike Result which short-circuits, Validation runs ALL checks
-// and collects every error.
-
-validateName := func(name string) validation.Validation[string, string] {
-    if name == "" {
-        return validation.Failure[string, string]("name is required")
-    }
-    return validation.Success[string, string](name)
-}
-
-validateAge := func(age int) validation.Validation[int, string] {
-    if age < 18 {
-        return validation.Failure[int, string]("must be 18 or older")
-    }
-    return validation.Success[int, string](age)
-}
-
-// Tip: the trailing type arg can be inferred from the value, so these are equivalent:
-//   validation.Failure[int, string]("bad")  ==  validation.Failure[int]("bad")
-//   validation.Success[int, string](42)     ==  validation.Success[string](42)
-
-// Map2-Map5: combine N validations, accumulating ALL errors
-user := validation.Map2(
-    validateName(""),       // Failure
-    validateAge(12),        // Failure
-    func(name string, age int) User { return User{name, age} },
-)
-// => Failure(["name is required", "must be 18 or older"])
-// Both errors reported, nothing short-circuited!
-
-// Sequence: []Validation => Validation[[]T]
-results := validation.Sequence([]validation.Validation[int, string]{
-    validation.Success[int, string](1),
-    validation.Failure[int, string]("bad"),
-    validation.Failure[int, string]("worse"),
-})
-// => Failure(["bad", "worse"])
-
-// Traverse: map + sequence in one step
-parsed := validation.Traverse([]string{"1", "bad", "3"}, parseIntV)
-// => Failure(["not a number: bad"])
-
-// Interop: Result <=> Validation
-v := validation.FromResult(result.Ok[int, string](42))  // => Success(42)
-r := v.ToResult()                                         // => Ok(42)
-```
-
 ### pipe : threading values
 
 **Naming convention** - the suffix tells you the type contract:
 
-| Suffix | Variant                                | Type contract                                        | Example                 |
-|--------|----------------------------------------|------------------------------------------------------|-------------------------|
- `EndoN` `PipeEndoN`, `ComposeEndoN`                     variadic, all steps `T => T` (same type, endomorphic)  string transforms       
-| `2..8` | `Pipe2`-`Pipe8`, `Compose2`-`Compose4` | fixed-arity, each step may change type (`A => B => C`) | parse + validate + save |
+| Suffix  | Variant                                  | Type contract                                          | Example                 |
+|---------|------------------------------------------|--------------------------------------------------------|-------------------------|
+| `EndoN` | `PipeEndoN`, `ComposeEndoN`              | variadic, all steps `T => T` (same type, endomorphic)  | string transforms       |
+| `2..8`  | `Pipe2`-`Pipe8`, `Compose2`-`Compose4`   | fixed-arity, each step may change type (`A => B => C`) | parse + validate + save |
 
 The compiler enforces this: `PipeEndoN` simply cannot accept a function whose output
 type differs from its input. `Pipe2`-`Pipe8` each declare distinct type params
@@ -221,6 +230,15 @@ validated := pipe.Pipe3(
     strings.TrimSpace,   // string => string
     parse,               // string => int
     validate,            // int    => error
+)
+
+// Tap: side-effect (logging, metrics) without changing the value
+result := pipe.Pipe4(
+    rawInput,
+    strings.TrimSpace,
+    pipe.Tap(func(s string) { log.Println("trimmed:", s) }),
+    strings.ToUpper,
+    validate,
 )
 ```
 
@@ -311,5 +329,3 @@ result     =>  option
 validation =>  option, result
 seq        =>  option
 ```
-
-No circular imports. No external dependencies.

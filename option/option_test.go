@@ -117,3 +117,15 @@ func TestToSlice(t *testing.T) {
 		t.Fatal("expected empty")
 	}
 }
+func TestMap2(t *testing.T) {
+	got := option.Map2(option.Some(2), option.Some(3), func(a, b int) int { return a + b })
+	if got.Unwrap() != 5 {
+		t.Fatalf("expected 5, got %d", got.Unwrap())
+	}
+	if option.Map2(option.None[int](), option.Some(3), func(a, b int) int { return a + b }).IsSome() {
+		t.Fatal("expected None when first is None")
+	}
+	if option.Map2(option.Some(2), option.None[int](), func(a, b int) int { return a + b }).IsSome() {
+		t.Fatal("expected None when second is None")
+	}
+}

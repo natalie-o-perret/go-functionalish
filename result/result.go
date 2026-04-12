@@ -107,6 +107,18 @@ func FromOption[T, E any](o option.Option[T], errIfNone E) Result[T, E] {
 	return Err[T, E](errIfNone)
 }
 
+// Zip combines two Results into a Result of a pair.
+// Returns the first Err encountered if either is Err.
+func Zip[T, U, E any](a Result[T, E], b Result[U, E]) Result[option.Pair[T, U], E] {
+	if a.ok && b.ok {
+		return Ok[option.Pair[T, U], E](option.Pair[T, U]{First: a.value, Second: b.value})
+	}
+	if !a.ok {
+		return Err[option.Pair[T, U], E](a.err)
+	}
+	return Err[option.Pair[T, U], E](b.err)
+}
+
 // Flatten unwraps a nested Result[Result[T,E],E] into Result[T,E].
 func Flatten[T, E any](r Result[Result[T, E], E]) Result[T, E] {
 	if r.ok {
