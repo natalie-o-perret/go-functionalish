@@ -22,7 +22,6 @@ func TestPipe3(t *testing.T) {
 }
 
 func TestPipeEndoN(t *testing.T) {
-	// arbitrary number of same-type steps
 	got := pipe.PipeEndoN(
 		" hello world ",
 		strings.TrimSpace,
@@ -38,5 +37,21 @@ func TestPipeEndoN(t *testing.T) {
 	// zero steps: value passes through unchanged
 	if pipe.PipeEndoN(42) != 42 {
 		t.Fatal("zero-step PipeEndoN should return value unchanged")
+	}
+}
+
+func TestTap(t *testing.T) {
+	var seen string
+	got := pipe.Pipe3(
+		" hello ",
+		strings.TrimSpace,
+		pipe.Tap(func(s string) { seen = s }),
+		strings.ToUpper,
+	)
+	if got != "HELLO" {
+		t.Fatalf("got %s", got)
+	}
+	if seen != "hello" {
+		t.Fatalf("tap saw %q, want %q", seen, "hello")
 	}
 }

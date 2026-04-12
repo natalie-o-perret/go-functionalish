@@ -638,3 +638,50 @@ func TestPipeline_LedgerEntry(t *testing.T) {
 		assertPipeErr(t, process("2024-03-15|100.00|ACCT-999|memo"), "unknown account: ACCT-999")
 	})
 }
+func TestFlatten(t *testing.T) {
+	inner := result.Ok[int, string](42)
+	outer := result.Ok[result.Result[int, string], string](inner)
+	if result.Flatten(outer).Unwrap() != 42 {
+		t.Fatal("expected 42")
+	}
+	outerErr := result.Err[result.Result[int, string], string]("boom")
+	if result.Flatten(outerErr).IsOk() {
+		t.Fatal("expected Err")
+	}
+}
+func TestOrElse(t *testing.T) {
+	ok := result.Ok[int, string](1)
+	got := result.OrElse(ok, func(e string) result.Result[int, string] { return result.Ok[int, string](99) })
+	if got.Unwrap() != 1 {
+		t.Fatal("expected Ok to win")
+	}
+	err := result.Err[int, string]("oops")
+	got = result.OrElse(err, func(e string) result.Result[int, string] { return result.Ok[int, string](42) })
+	if got.Unwrap() != 42 {
+		t.Fatal("expected fallback 42")
+	}
+}
+func TestTee(t *testing.T) {
+	var seen int
+	r := result.Ok[int, string](7)
+	out := result.Tee(r, func(v int) { seen = v })
+	if seen != 7 || out.Unwrap() != 7 {
+		t.Fatal("Tee should call fn and return unchanged")
+	}
+	seen = 0
+	result.Tee(result.Err[int, string]("e"), func(v int) { seen = v })
+	if seen != 0 {
+		t.Fatal("Tee should not call fn on Err")
+	}
+}
+func TestTeeErr(t *testing.T) {
+	var seen string
+	result.TeeErr(result.Err[int, string]("bad"), func(e string) { seen = e })
+	if seen != "bad" {
+		t.Fatal("TeeErr should call fn on Err")
+	}
+	result.TeeErr(result.Ok[int, string](1), func(e string) { seen = "nope" })
+	if seen == "nope" {
+		t.Fatal("TeeErr should not call fn on Ok")
+	}
+}
