@@ -24,8 +24,6 @@ type T4[A, B, C, D any] struct {
 	Fourth D
 }
 
-// ── constructors ──────────────────────────────────────────────────────────────
-
 // Of2 creates a T2 from two values.
 func Of2[A, B any](a A, b B) T2[A, B] { return T2[A, B]{First: a, Second: b} }
 
@@ -39,26 +37,17 @@ func Of4[A, B, C, D any](a A, b B, c C, d D) T4[A, B, C, D] {
 	return T4[A, B, C, D]{First: a, Second: b, Third: c, Fourth: d}
 }
 
-// ── T2 methods ────────────────────────────────────────────────────────────────
-
 // Unpack returns the two fields as individual return values.
 func (t T2[A, B]) Unpack() (A, B) { return t.First, t.Second }
 
 // Swap returns a new T2 with First and Second exchanged.
 func (t T2[A, B]) Swap() T2[B, A] { return T2[B, A]{First: t.Second, Second: t.First} }
 
-// ── T3 methods ────────────────────────────────────────────────────────────────
-
 // Unpack returns the three fields as individual return values.
 func (t T3[A, B, C]) Unpack() (A, B, C) { return t.First, t.Second, t.Third }
 
-// ── T4 methods ────────────────────────────────────────────────────────────────
-
 // Unpack returns the four fields as individual return values.
 func (t T4[A, B, C, D]) Unpack() (A, B, C, D) { return t.First, t.Second, t.Third, t.Fourth }
-
-// ── type-transforming package-level functions ─────────────────────────────────
-// These must be package-level because Go methods cannot introduce new type parameters.
 
 // Apply calls fn with the two fields of t and returns the result.
 func Apply[A, B, R any](t T2[A, B], fn func(A, B) R) R { return fn(t.First, t.Second) }
@@ -109,4 +98,3 @@ func FromFunc2[A, B, C any](fn func(A, B) C) func(T2[A, B]) C {
 func ToFunc2[A, B, C any](fn func(T2[A, B]) C) func(A, B) C {
 	return func(a A, b B) C { return fn(T2[A, B]{First: a, Second: b}) }
 }
-

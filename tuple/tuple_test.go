@@ -7,8 +7,6 @@ import (
 	"github.com/natalie-o-perret/gof/tuple"
 )
 
-// ── constructors ──────────────────────────────────────────────────────────────
-
 func TestOf2(t *testing.T) {
 	p := tuple.Of2(1, "hello")
 	if p.First != 1 || p.Second != "hello" {
@@ -30,8 +28,6 @@ func TestOf4(t *testing.T) {
 	}
 }
 
-// ── T2 methods ────────────────────────────────────────────────────────────────
-
 func TestT2Unpack(t *testing.T) {
 	a, b := tuple.Of2(42, "world").Unpack()
 	if a != 42 || b != "world" {
@@ -46,8 +42,6 @@ func TestT2Swap(t *testing.T) {
 	}
 }
 
-// ── T3 methods ────────────────────────────────────────────────────────────────
-
 func TestT3Unpack(t *testing.T) {
 	a, b, c := tuple.Of3(1, 2, 3).Unpack()
 	if a != 1 || b != 2 || c != 3 {
@@ -55,16 +49,12 @@ func TestT3Unpack(t *testing.T) {
 	}
 }
 
-// ── T4 methods ────────────────────────────────────────────────────────────────
-
 func TestT4Unpack(t *testing.T) {
 	a, b, c, d := tuple.Of4(1, 2, 3, 4).Unpack()
 	if a != 1 || b != 2 || c != 3 || d != 4 {
 		t.Fatalf("got %v %v %v %v", a, b, c, d)
 	}
 }
-
-// ── package-level functions ───────────────────────────────────────────────────
 
 func TestApply(t *testing.T) {
 	got := tuple.Apply(tuple.Of2(3, 4), func(a, b int) int { return a + b })
@@ -131,4 +121,3 @@ func TestFromFunc2_ToFunc2(t *testing.T) {
 		t.Fatal("expected 5")
 	}
 }
-
