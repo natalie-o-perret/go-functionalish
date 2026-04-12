@@ -113,18 +113,18 @@ func assertPipeErr[T any](t *testing.T, r result.Result[T, string], wantSubstr s
 func TestPipeline_OrderFulfillment(t *testing.T) {
 	type RawOrder struct {
 		Email string
-		SKUs  []string
 		Promo string
+		SKUs  []string
 	}
 	type VerifiedOrder struct {
 		CustomerID string
-		SKUs       []string
 		Promo      string
+		SKUs       []string
 	}
 	type PricedOrder struct {
 		CustomerID string
-		Subtotal   float64
 		Promo      string
+		Subtotal   float64
 	}
 	type FinalOrder struct {
 		CustomerID string
@@ -253,14 +253,14 @@ func TestPipeline_OrderFulfillment(t *testing.T) {
 
 	// The full 8-step pipeline.
 	process := func(input string) result.Result[Receipt, string] {
-		r1 := parseOrder(input)                 // step 1: Bind
-		r2 := result.Bind(r1, resolveCustomer)  // step 2: Bind
-		r3 := result.Bind(r2, checkInventory)   // step 3: Bind
-		r4 := result.Map(r3, priceItems)        // step 4: Map (pure)
-		r5 := result.Bind(r4, applyPromo)       // step 5: Bind
-		r6 := result.Map(r5, finalize)          // step 6: Map (pure)
-		r7 := result.Bind(r6, chargePayment)    // step 7: Bind
-		r8 := result.Map(r7, issueReceipt)      // step 8: Map (pure)
+		r1 := parseOrder(input)                // step 1: Bind
+		r2 := result.Bind(r1, resolveCustomer) // step 2: Bind
+		r3 := result.Bind(r2, checkInventory)  // step 3: Bind
+		r4 := result.Map(r3, priceItems)       // step 4: Map (pure)
+		r5 := result.Bind(r4, applyPromo)      // step 5: Bind
+		r6 := result.Map(r5, finalize)         // step 6: Map (pure)
+		r7 := result.Bind(r6, chargePayment)   // step 7: Bind
+		r8 := result.Map(r7, issueReceipt)     // step 8: Map (pure)
 		return r8
 	}
 
@@ -339,13 +339,13 @@ func TestPipeline_UserOnboarding(t *testing.T) {
 		PasswordHash string
 	}
 	type Account struct {
-		ID    int
 		Email string
+		ID    int
 	}
 	type Session struct {
 		Token     string
-		AccountID int
 		Role      string
+		AccountID int
 	}
 
 	takenEmails := map[string]bool{
@@ -426,14 +426,14 @@ func TestPipeline_UserOnboarding(t *testing.T) {
 
 	// The full 7-step pipeline, with MapErr wrapping all errors.
 	register := func(input string) result.Result[Session, string] {
-		r1 := parseInput(input)                            // step 1
-		r2 := result.Bind(r1, validateEmail)               // step 2
-		r3 := result.Bind(r2, checkAvailable)              // step 3
-		r4 := result.Bind(r3, checkPasswordStrength)       // step 4
-		r5 := result.Map(r4, hashPassword)                 // step 5 (pure)
-		r6 := result.Bind(r5, createAccount)               // step 6
-		r7 := result.Map(r6, issueSession)                 // step 7 (pure)
-		return result.MapErr(r7, func(e string) string {   // enrich errors
+		r1 := parseInput(input)                          // step 1
+		r2 := result.Bind(r1, validateEmail)             // step 2
+		r3 := result.Bind(r2, checkAvailable)            // step 3
+		r4 := result.Bind(r3, checkPasswordStrength)     // step 4
+		r5 := result.Map(r4, hashPassword)               // step 5 (pure)
+		r6 := result.Bind(r5, createAccount)             // step 6
+		r7 := result.Map(r6, issueSession)               // step 7 (pure)
+		return result.MapErr(r7, func(e string) string { // enrich errors
 			return "registration failed: " + e
 		})
 	}
@@ -495,14 +495,14 @@ func TestPipeline_LedgerEntry(t *testing.T) {
 	}
 	type EnrichedTx struct {
 		Date        string
-		Amount      float64
 		AccountName string
 		Memo        string
+		Amount      float64
 	}
 	type LedgerEntry struct {
 		Date    string
-		Amount  float64
 		Summary string
+		Amount  float64
 	}
 
 	accounts := map[string]string{
@@ -594,12 +594,12 @@ func TestPipeline_LedgerEntry(t *testing.T) {
 
 	// The full 6-step pipeline.
 	process := func(line string) result.Result[LedgerEntry, string] {
-		r1 := parseCSV(line)                    // step 1: Bind
-		r2 := result.Bind(r1, validateFields)   // step 2: Bind
-		r3 := result.Bind(r2, parseAmount)      // step 3: Bind (Try + MapErr)
-		r4 := result.Bind(r3, resolveAccount)   // step 4: Bind (FromOption)
-		r5 := result.Map(r4, applyRate)            // step 5: Map (pure)
-		r6 := result.Map(r5, formatEntry)          // step 6: Map (pure)
+		r1 := parseCSV(line)                  // step 1: Bind
+		r2 := result.Bind(r1, validateFields) // step 2: Bind
+		r3 := result.Bind(r2, parseAmount)    // step 3: Bind (Try + MapErr)
+		r4 := result.Bind(r3, resolveAccount) // step 4: Bind (FromOption)
+		r5 := result.Map(r4, applyRate)       // step 5: Map (pure)
+		r6 := result.Map(r5, formatEntry)     // step 6: Map (pure)
 		return r6
 	}
 
@@ -638,4 +638,3 @@ func TestPipeline_LedgerEntry(t *testing.T) {
 		assertPipeErr(t, process("2024-03-15|100.00|ACCT-999|memo"), "unknown account: ACCT-999")
 	})
 }
-
