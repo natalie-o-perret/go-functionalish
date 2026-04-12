@@ -1,13 +1,12 @@
 // Package gof is a cohesive, type-safe functional programming library for Go 1.24+.
 //
-// Inspired by C# LINQ, F# sequences, Option and Result types.
 // No reflection. No interface{}. Pure generics and lazy by default.
 //
-// It provides four packages:
+// It provides five packages:
 //
 //   - [github.com/natalie-o-perret/gof/seq]: lazy Seq[T] sequence pipelines (filter, map, sort, group, zip, ...)
 //   - [github.com/natalie-o-perret/gof/option]: Option[T] for explicit presence/absence, no nil
 //   - [github.com/natalie-o-perret/gof/result]: Result[T,E] for railway-oriented error handling
 //   - [github.com/natalie-o-perret/gof/validation]: Validation[T,E] for applicative error accumulation
-//   - [github.com/natalie-o-perret/gof/pipe]: Pipe2-Pipe8 / PipeN and Compose2-Compose4 / ComposeN for F#-style |> threading
+//   - [github.com/natalie-o-perret/gof/pipe]: Pipe2-Pipe8 / PipeEndoN and Compose2-Compose4 / ComposeEndoN for left-to-right value threading
 package gof
