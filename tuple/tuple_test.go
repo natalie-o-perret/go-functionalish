@@ -7,8 +7,8 @@ import (
 	"github.com/natalie-o-perret/gof/tuple"
 )
 
-func TestOf2(t *testing.T) {
-	p := tuple.Of2(1, "hello")
+func TestOf(t *testing.T) {
+	p := tuple.Of(1, "hello")
 	if p.First != 1 || p.Second != "hello" {
 		t.Fatalf("unexpected T2: %v", p)
 	}
@@ -29,14 +29,14 @@ func TestOf4(t *testing.T) {
 }
 
 func TestT2Unpack(t *testing.T) {
-	a, b := tuple.Of2(42, "world").Unpack()
+	a, b := tuple.Of(42, "world").Unpack()
 	if a != 42 || b != "world" {
 		t.Fatalf("got %v %v", a, b)
 	}
 }
 
 func TestT2Swap(t *testing.T) {
-	s := tuple.Of2("x", 99).Swap()
+	s := tuple.Of("x", 99).Swap()
 	if s.First != 99 || s.Second != "x" {
 		t.Fatalf("unexpected swap: %v", s)
 	}
@@ -57,7 +57,7 @@ func TestT4Unpack(t *testing.T) {
 }
 
 func TestApply(t *testing.T) {
-	got := tuple.Apply(tuple.Of2(3, 4), func(a, b int) int { return a + b })
+	got := tuple.Apply(tuple.Of(3, 4), func(a, b int) int { return a + b })
 	if got != 7 {
 		t.Fatalf("expected 7, got %d", got)
 	}
@@ -78,21 +78,21 @@ func TestApply4(t *testing.T) {
 }
 
 func TestMapFirst(t *testing.T) {
-	got := tuple.MapFirst(tuple.Of2("hello", 42), strings.ToUpper)
+	got := tuple.MapFirst(tuple.Of("hello", 42), strings.ToUpper)
 	if got.First != "HELLO" || got.Second != 42 {
 		t.Fatalf("unexpected: %v", got)
 	}
 }
 
 func TestMapSecond(t *testing.T) {
-	got := tuple.MapSecond(tuple.Of2(42, "hello"), strings.ToUpper)
+	got := tuple.MapSecond(tuple.Of(42, "hello"), strings.ToUpper)
 	if got.First != 42 || got.Second != "HELLO" {
 		t.Fatalf("unexpected: %v", got)
 	}
 }
 
 func TestMap(t *testing.T) {
-	got := tuple.Map(tuple.Of2("hello", "world"), strings.ToUpper, strings.ToUpper)
+	got := tuple.Map(tuple.Of("hello", "world"), strings.ToUpper, strings.ToUpper)
 	if got.First != "HELLO" || got.Second != "WORLD" {
 		t.Fatalf("unexpected: %v", got)
 	}
@@ -113,7 +113,7 @@ func TestCurryUncurry(t *testing.T) {
 func TestFromFunc2_ToFunc2(t *testing.T) {
 	add := func(a, b int) int { return a + b }
 	tupledAdd := tuple.FromFunc2(add)
-	if tupledAdd(tuple.Of2(2, 3)) != 5 {
+	if tupledAdd(tuple.Of(2, 3)) != 5 {
 		t.Fatal("expected 5")
 	}
 	backToAdd := tuple.ToFunc2(tupledAdd)

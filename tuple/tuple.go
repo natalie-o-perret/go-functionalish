@@ -24,8 +24,8 @@ type T4[A, B, C, D any] struct {
 	Fourth D
 }
 
-// Of2 creates a T2 from two values.
-func Of2[A, B any](a A, b B) T2[A, B] { return T2[A, B]{First: a, Second: b} }
+// Of creates a T2 from two values.
+func Of[A, B any](a A, b B) T2[A, B] { return T2[A, B]{First: a, Second: b} }
 
 // Of3 creates a T3 from three values.
 func Of3[A, B, C any](a A, b B, c C) T3[A, B, C] {
