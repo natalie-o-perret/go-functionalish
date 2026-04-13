@@ -21,7 +21,7 @@ func Then[T, R any](s Seq[T], fn func(Seq[T]) R) R {
 	return fn(s)
 }
 
-// ── curried same-type helpers (for use with pipe) ─────────────────────────────
+// -- curried same-type helpers (for use with pipe) -----------------------------
 
 // FilterFn returns a transform: Seq[T] => Seq[T], keeping elements where fn returns true.
 func FilterFn[T any](fn func(T) bool) func(Seq[T]) Seq[T] {
@@ -78,7 +78,7 @@ func TailFn[T any]() func(Seq[T]) Seq[T] {
 	return func(s Seq[T]) Seq[T] { return s.Tail() }
 }
 
-// ── curried type-changing helpers (for use with Then / pipe) ──────────────────
+// -- curried type-changing helpers (for use with Then / pipe) ------------------
 
 // MapFn returns a transform: Seq[T] => Seq[R].
 func MapFn[T, R any](fn func(T) R) func(Seq[T]) Seq[R] {
@@ -150,7 +150,7 @@ func ScanFn[T, S any](initial S, fn func(S, T) S) func(Seq[T]) Seq[S] {
 	return func(s Seq[T]) Seq[S] { return Scan(s, initial, fn) }
 }
 
-// ── curried terminal helpers ──────────────────────────────────────────────────
+// -- curried terminal helpers --------------------------------------------------
 
 // ToSliceFn returns a terminal: Seq[T] => []T.
 func ToSliceFn[T any]() func(Seq[T]) []T {

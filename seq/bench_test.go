@@ -8,7 +8,7 @@ import (
 	"github.com/natalie-o-perret/gof/seq"
 )
 
-// ── data ──────────────────────────────────────────────────────────────────────
+// -- data ----------------------------------------------------------------------
 
 var benchData = func() []int {
 	out := make([]int, 10_000)
@@ -21,7 +21,7 @@ var benchData = func() []int {
 // sink prevents dead-code elimination.
 var sink any
 
-// ── small pipeline: filter → map → truncate → toSlice ─────────────────────────
+// -- small pipeline: filter -> map -> truncate -> toSlice -------------------------
 
 // Baseline: direct method / function calls, no curried wrappers.
 func BenchmarkSmall_Direct(b *testing.B) {
@@ -48,7 +48,7 @@ func BenchmarkSmall_Pipe(b *testing.B) {
 	}
 }
 
-// ── medium pipeline: filter → exclude → skip → truncate → map → sort → toSlice
+// -- medium pipeline: filter -> exclude -> skip -> truncate -> map -> sort -> toSlice
 
 func BenchmarkMedium_Direct(b *testing.B) {
 	for b.Loop() {
@@ -82,7 +82,7 @@ func BenchmarkMedium_Pipe(b *testing.B) {
 	}
 }
 
-// ── large pipeline: 10 same-type steps ────────────────────────────────────────
+// -- large pipeline: 10 same-type steps ----------------------------------------
 
 func BenchmarkLarge_Direct(b *testing.B) {
 	for b.Loop() {
@@ -122,7 +122,7 @@ func BenchmarkLarge_Pipe(b *testing.B) {
 	}
 }
 
-// ── compose overhead in isolation ─────────────────────────────────────────────
+// -- compose overhead in isolation ---------------------------------------------
 
 func BenchmarkComposeEndoN_Overhead(b *testing.B) {
 	// 5 composed same-type steps vs 5 direct method calls

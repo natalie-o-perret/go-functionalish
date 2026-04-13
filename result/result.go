@@ -73,7 +73,7 @@ func (r Result[T, E]) ToOption() option.Option[T] {
 	return option.None[T]()
 }
 
-// ── type-transforming package-level functions ─────────────────────────────────
+// -- type-transforming package-level functions ---------------------------------
 
 // Map applies fn to the Ok value, passing Err unchanged.
 func Map[T, U, E any](r Result[T, E], fn func(T) U) Result[U, E] {

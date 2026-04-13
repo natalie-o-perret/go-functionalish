@@ -77,14 +77,14 @@ func Map[A, B, RA, RB any](t T2[A, B], fnA func(A) RA, fnB func(B) RB) T2[RA, RB
 	return T2[RA, RB]{First: fnA(t.First), Second: fnB(t.Second)}
 }
 
-// Curry converts a binary function (A, B) → C into a curried form A → B → C.
+// Curry converts a binary function (A, B) -> C into a curried form A -> B -> C.
 func Curry[A, B, C any](fn func(A, B) C) func(A) func(B) C {
 	return func(a A) func(B) C {
 		return func(b B) C { return fn(a, b) }
 	}
 }
 
-// Uncurry converts a curried function A → B → C into a binary function (A, B) → C.
+// Uncurry converts a curried function A -> B -> C into a binary function (A, B) -> C.
 func Uncurry[A, B, C any](fn func(A) func(B) C) func(A, B) C {
 	return func(a A, b B) C { return fn(a)(b) }
 }

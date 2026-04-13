@@ -282,7 +282,7 @@ OfSlice(cars).Filter(fn).SortWith(less).Truncate(10)
 
 //  package-level : changes type
 seq.Map(OfSlice(cars).Filter(fn), Car.Owner)
-//      ↑ sub-chain               ↑ transform
+//      ^ sub-chain               ^ transform
 ```
 
 ### Lazy vs eager

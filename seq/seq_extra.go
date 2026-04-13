@@ -22,7 +22,7 @@ type Triple[T, U, V any] struct {
 	Third  V
 }
 
-// ── additional constructors ───────────────────────────────────────────────────
+// -- additional constructors ---------------------------------------------------
 
 // Init generates a Seq of n elements using fn(index).
 func Init[T any](n int, fn func(int) T) Seq[T] {
@@ -52,7 +52,7 @@ func Singleton[T any](v T) Seq[T] {
 	return func(yield func(T) bool) { yield(v) }
 }
 
-// ── additional lazy pipeline methods ──────────────────────────────────────────
+// -- additional lazy pipeline methods ------------------------------------------
 
 // Tail returns all elements except the first.
 func (s Seq[T]) Tail() Seq[T] { return s.Skip(1) }
@@ -122,7 +122,7 @@ func (s Seq[T]) Permute(fn func(int) int) Seq[T] {
 	return OfSlice(result)
 }
 
-// ── additional terminal methods ───────────────────────────────────────────────
+// -- additional terminal methods -----------------------------------------------
 
 // Iteri calls fn(index, element) for every element, consuming the sequence.
 func (s Seq[T]) Iteri(fn func(int, T)) {
@@ -269,7 +269,7 @@ func (s Seq[T]) TryExactlyOne() option.Option[T] {
 	return option.None[T]()
 }
 
-// ── additional type-transforming package-level functions ───────────────────────
+// -- additional type-transforming package-level functions -----------------------
 
 // Mapi transforms Seq[T] => Seq[R] lazily, providing the index to fn.
 func Mapi[T, R any](s Seq[T], fn func(int, T) R) Seq[R] {
@@ -746,7 +746,7 @@ func MapFold[S, T, R any](s Seq[T], initial S, fn func(S, T) (R, S)) ([]R, S) {
 	return results, acc
 }
 
-// ── additional constructors ───────────────────────────────────────────────────
+// -- additional constructors ---------------------------------------------------
 
 // Unfold generates a Seq by repeatedly applying fn to a seed state.
 // fn returns None to stop, or Some(Pair{value, nextState}) to continue.
@@ -807,7 +807,7 @@ func OfOption[T any](o option.Option[T]) Seq[T] {
 	return Empty[T]()
 }
 
-// ── additional pipeline functions ─────────────────────────────────────────────
+// -- additional pipeline functions ---------------------------------------------
 
 // Interleave alternates elements from a and b: [a1,b1,a2,b2,...].
 // Stops when either sequence is exhausted.
@@ -830,7 +830,7 @@ func Interleave[T any](a, b Seq[T]) Seq[T] {
 	}
 }
 
-// ── additional terminal functions ─────────────────────────────────────────────
+// -- additional terminal functions ---------------------------------------------
 
 // Partition splits s into two slices in one pass:
 // the first contains elements where fn returns true, the second where fn returns false.
