@@ -26,6 +26,7 @@ No reflection. No `interface{}`. Pure generics and lazy by default.
 | `result`     | `Result[T,E]`: railway-oriented error handling        |
 | `validation` | `Validation[T,E]`: applicative error accumulation     |
 | `pipe`       | `Pipe2`...`Pipe8`: F#-style `\|>` operator equivalent |
+| `tuple`      | `T2`/`T3`/`T4`: immutable generic tuples              |
 
 ## Quick start
 
@@ -36,6 +37,7 @@ import (
     "github.com/natalie-o-perret/gof/result"
     "github.com/natalie-o-perret/gof/validation"
     "github.com/natalie-o-perret/gof/pipe"
+    "github.com/natalie-o-perret/gof/tuple"
 )
 ```
 
@@ -264,6 +266,46 @@ pipe.Pipe5(
 `pipe.Compose2`-`Compose4` do the same for type-changing steps (`A=>B=>C`).
 Together they cover pipelines of any length.
 
+### tuple: immutable generic tuples
+
+```go
+// Construct
+pair  := tuple.Of(1, "hello")       // T2[int, string]
+triple := tuple.Of3(1, "hi", true)  // T3[int, string, bool]
+quad  := tuple.Of4(1, "hi", true, 3.14) // T4[int, string, bool, float64]
+
+// Access fields
+pair.First  // 1
+pair.Second // "hello"
+
+// Destructure (closest to F# let (a, b) = t)
+a, b := pair.Unpack()
+a, b, c := triple.Unpack()
+
+// Swap (T2 only) - returns T2[B, A]
+tuple.Of("x", 99).Swap() // T2[int, string]{First: 99, Second: "x"}
+
+// Apply: call a function with the tuple's fields
+tuple.Apply(tuple.Of(3, 4), func(a, b int) int { return a + b }) // 7
+tuple.Apply3(triple, func(n int, s string, b bool) string { ... })
+
+// Map fields
+tuple.MapFirst(tuple.Of("hello", 42), strings.ToUpper)  // T2{"HELLO", 42}
+tuple.MapSecond(tuple.Of(42, "hello"), strings.ToUpper) // T2{42, "HELLO"}
+tuple.Map(tuple.Of("hello", "world"), strings.ToUpper, strings.ToUpper)
+
+// Curry / Uncurry
+add := func(a, b int) int { return a + b }
+curried := tuple.Curry(add)   // func(int) func(int) int
+curried(3)(4)                 // 7
+tuple.Uncurry(curried)(3, 4)  // 7
+
+// Lift binary functions to/from tuple-consuming form
+tupledAdd := tuple.FromFunc2(add)     // func(T2[int,int]) int
+tupledAdd(tuple.Of(2, 3))            // 5
+tuple.ToFunc2(tupledAdd)(2, 3)       // 5
+```
+
 ## Design notes
 
 ### Why are `Map`, `Collect`, `GroupBy` package-level functions?
@@ -328,4 +370,5 @@ option     =>  (none)
 result     =>  option
 validation =>  option, result
 seq        =>  option
+tuple      =>  (none)
 ```
