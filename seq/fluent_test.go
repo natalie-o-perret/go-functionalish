@@ -159,7 +159,7 @@ func TestPipelineComposition(t *testing.T) {
 	assertSlice(t, got, []string{"Alice", "Charlie", "Diana"})
 }
 
-// ── long pipeline examples ────────────────────────────────────────────────────
+// -- long pipeline examples ----------------------------------------------------
 
 func TestPipeline10Steps(t *testing.T) {
 	type employee struct {
@@ -189,7 +189,7 @@ func TestPipeline10Steps(t *testing.T) {
 	//  3. SortWith    - sort by salary descending
 	//  4. Skip        - drop the highest earner
 	//  5. Truncate    - keep the next 4
-	//  6. Map         - extract name (employee → string)
+	//  6. Map         - extract name (employee -> string)
 	//  7. Distinct    - deduplicate names
 	//  8. Map         - uppercase each name
 	//  9. SortWith    - sort alphabetically
@@ -225,7 +225,7 @@ func TestPipeline10Steps(t *testing.T) {
 	})
 
 	// Trace:
-	//   Active + ≥3yr: Alice(95k), Bob(72k), Diana(65k), Eve(110k),
+	//   Active + >=3yr: Alice(95k), Bob(72k), Diana(65k), Eve(110k),
 	//     Frank(72k), Hank(92k), Ivy(81k)
 	//   Sorted desc: Eve, Alice, Hank, Ivy, Bob, Frank, Diana
 	//   Skip(1) + Truncate(4): Alice, Hank, Ivy, Bob
@@ -249,7 +249,7 @@ func TestPipeline20Steps(t *testing.T) {
 	//  8. Skip        - drop the first element (2000)
 	//  9. Truncate    - keep 10
 	// 10. SortWith    - sort ascending
-	// 11. Filter      - drop values ≥ 100
+	// 11. Filter      - drop values >= 100
 	// 12. Map         - double each value
 	// 13. Scan        - running sum
 	// 14. Skip        - drop initial accumulator (0)
@@ -263,7 +263,7 @@ func TestPipeline20Steps(t *testing.T) {
 	got := pipe.Pipe4(
 		seq.Range(1, 100),
 
-		// Steps 1-15: all Seq[int] → Seq[int]
+		// Steps 1-15: all Seq[int] -> Seq[int]
 		pipe.ComposeEndoN(
 			seq.FilterFn(func(n int) bool { return n%2 == 0 }),   // 1
 			seq.ExcludeFn(func(n int) bool { return n%10 == 0 }), // 2
@@ -282,7 +282,7 @@ func TestPipeline20Steps(t *testing.T) {
 			seq.FilterFn(func(n int) bool { return n > 100 }),      // 15
 		),
 
-		// Steps 16-17: Seq[int] → Seq[Pair[int,int]] → Seq[string]
+		// Steps 16-17: Seq[int] -> Seq[Pair[int,int]] -> Seq[string]
 		pipe.Compose2(
 			seq.IndexedFn[int](), // 16
 			seq.MapFn(func(p seq.Pair[int, int]) string { // 17
@@ -290,13 +290,13 @@ func TestPipeline20Steps(t *testing.T) {
 			}),
 		),
 
-		// Steps 18-19: Seq[string] → Seq[string]
+		// Steps 18-19: Seq[string] -> Seq[string]
 		pipe.ComposeEndoN(
 			seq.RevFn[string](),       // 18
 			seq.TruncateFn[string](5), // 19
 		),
 
-		// Step 20: Seq[string] → string
+		// Step 20: Seq[string] -> string
 		seq.FoldFn("", func(acc, s string) string { // 20
 			if acc == "" {
 				return s
@@ -306,12 +306,12 @@ func TestPipeline20Steps(t *testing.T) {
 	)
 
 	// Trace:
-	//   [1..99] → evens → drop ×10 → skip 3 → <80 → first 12
-	//   → [8..36] + [1000,2000] → rev → skip 2000 → first 10 → sort
-	//   → [16,18,22,24,26,28,32,34,36,1000]
-	//   → drop ≥100 → double → [32,36,44,48,52,56,64,68,72]
-	//   → scan(+) → [0,32,68,112,160,212,268,332,400,472] → skip 0
-	//   → keep >100 → indexed → format → rev → top 5 → join
+	//   [1..99] -> evens -> drop ×10 -> skip 3 -> <80 -> first 12
+	//   -> [8..36] + [1000,2000] -> rev -> skip 2000 -> first 10 -> sort
+	//   -> [16,18,22,24,26,28,32,34,36,1000]
+	//   -> drop >=100 -> double -> [32,36,44,48,52,56,64,68,72]
+	//   -> scan(+) -> [0,32,68,112,160,212,268,332,400,472] -> skip 0
+	//   -> keep >100 -> indexed -> format -> rev -> top 5 -> join
 	expected := "#6=472 | #5=400 | #4=332 | #3=268 | #2=212"
 	if got != expected {
 		t.Fatalf("20-step pipeline:\n got: %s\nwant: %s", got, expected)

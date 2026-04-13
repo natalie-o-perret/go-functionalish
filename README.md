@@ -128,7 +128,7 @@ option.Map(none, strings.ToUpper)           // => None
 name.UnwrapOr("anonymous") // => "Alice"
 none.UnwrapOr("anonymous") // => "anonymous"
 
-// DefaultWith: lazy default — fn is only called when None
+// DefaultWith: lazy default - fn is only called when None
 val := option.DefaultWith(none, func() string { return expensiveDefault() })
 
 // Contains: value equality check
@@ -174,7 +174,7 @@ r4 := result.Bind(r3, save)                   // step 4: Bind
 r5 := result.Map(r4, formatResponse)          // step 5: Map (pure)
 // r5 is either Ok(response) or Err from whichever step failed first.
 
-// Tee / TeeErr: side-effects without breaking the chain — great for logging
+// Tee / TeeErr: side-effects without breaking the chain - great for logging
 r := result.Tee(r3, func(v Request) { log.Printf("normalised: %v", v) })
 r = result.TeeErr(r, func(e string) { log.Printf("failed: %s", e) })
 
@@ -282,7 +282,7 @@ OfSlice(cars).Filter(fn).SortWith(less).Truncate(10)
 
 //  package-level : changes type
 seq.Map(OfSlice(cars).Filter(fn), Car.Owner)
-//      ↑ sub-chain               ↑ transform
+//      ^ sub-chain               ^ transform
 ```
 
 ### Lazy vs eager

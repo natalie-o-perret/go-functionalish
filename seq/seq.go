@@ -1,6 +1,6 @@
 // Package seq provides a lazy, generic Seq[T] sequence type inspired
 // by F# sequences. Pipelines are built by chaining methods; nothing
-// runs until a terminal method (ToSlice, Head, Length, …) is called.
+// runs until a terminal method (ToSlice, Head, Length, ...) is called.
 //
 // Design note : methods vs package-level functions:
 // Go does not allow methods to introduce new type parameters. Operations that
@@ -20,7 +20,7 @@ import (
 // methods can be attached directly without a wrapper struct.
 type Seq[T any] iter.Seq[T]
 
-// ── constructors ──────────────────────────────────────────────────────────────
+// -- constructors --------------------------------------------------------------
 
 // OfSlice wraps a slice into a Seq.
 func OfSlice[T any](items []T) Seq[T] {
@@ -59,7 +59,7 @@ func Empty[T any]() Seq[T] {
 	return func(func(T) bool) {}
 }
 
-// ── lazy pipeline methods ─────────────────────────────────────────────────────
+// -- lazy pipeline methods -----------------------------------------------------
 
 // Filter yields elements for which fn returns true.
 func (s Seq[T]) Filter(fn func(T) bool) Seq[T] {
@@ -198,7 +198,7 @@ func (s Seq[T]) Iter(fn func(T)) {
 	}
 }
 
-// ── terminal methods ──────────────────────────────────────────────────────────
+// -- terminal methods ----------------------------------------------------------
 
 // ToSlice materialises the sequence into a slice.
 //
@@ -288,7 +288,7 @@ func Fold[T, A any](s Seq[T], initial A, fn func(A, T) A) A {
 	return acc
 }
 
-// ── type-transforming package-level functions ─────────────────────────────────
+// -- type-transforming package-level functions ---------------------------------
 
 // Map transforms Seq[T] => Seq[R] lazily.
 func Map[T, R any](s Seq[T], fn func(T) R) Seq[R] {
