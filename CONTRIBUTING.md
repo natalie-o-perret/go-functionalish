@@ -13,23 +13,24 @@ Requires Go 1.24+ and [golangci-lint](https://golangci-lint.run/welcome/install/
 ## Workflow
 
 ```sh
-make test    # go test -race ./...
-make lint    # golangci-lint run ./...
+make test      # go test -race ./...
+make lint      # golangci-lint run ./...
+make lint-md   # markdownlint on all .md files
 ```
 
-Both run in CI on every PR. A PR must be green before merging.
+All three run in CI on every PR. A PR must be green before merging.
 
 ## Commit messages
 
 Commits must follow [Conventional Commits](https://www.conventionalcommits.org/):
 
-```
+```text
 type(scope?): short description
 ```
 
 Allowed types: `feat` `fix` `docs` `style` `refactor` `perf` `test` `build` `ci` `chore` `revert`
 
-```
+```text
 feat: add Zip to seq package
 fix(option): handle None in UnwrapOrElse
 docs: update README pipeline example
@@ -52,4 +53,3 @@ The commit-msg hook (installed by `make setup`) enforces this locally. The PR ti
 - **Type-transforming functions are package-level** (Go methods cannot introduce new type parameters).
 - **`seq` operations are lazy** - wrapping iterators, no materialisation until a terminal is called.
 - **F# naming conventions** - `Bind` not `FlatMap`, `Map` not `Select`, `Some`/`None` not `Just`/`Nothing`.
-

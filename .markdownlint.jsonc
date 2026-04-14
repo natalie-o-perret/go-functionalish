@@ -1,0 +1,28 @@
+// markdownlint configuration
+// https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+{
+  // Allow long lines — tables and URLs make strict wrapping impractical
+  "MD013": false,
+
+  // Allow inline HTML (badges, admonitions, etc.)
+  "MD033": false,
+
+  // Allow duplicate headings in different sections (e.g. multiple "Example")
+  "MD024": { "siblings_only": true },
+
+  // Allow trailing punctuation in headings (e.g. "...functions?")
+  "MD026": false,
+
+  // Allow multiple top-level headings (we only have one, but don't break on edge cases)
+  "MD025": false,
+
+  // Don't require blank lines around fenced code blocks inside list items
+  "MD031": false,
+
+  // Don't enforce ordered list item prefix style (allow 1. 1. 1. or 1. 2. 3.)
+  "MD029": { "style": "ordered" },
+
+  // Allow emphasis used as heading (we use **bold** in tables)
+  "MD036": false
+}
+

@@ -1,0 +1,21 @@
+name: markdown-lint
+
+on:
+  push:
+    branches: [main]
+    paths: ["**/*.md", ".markdownlint.jsonc"]
+  pull_request:
+    branches: [main]
+    paths: ["**/*.md", ".markdownlint.jsonc"]
+
+jobs:
+  lint-markdown:
+    name: lint markdown
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          globs: "**/*.md"
+
