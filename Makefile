@@ -1,4 +1,4 @@
-.PHONY: setup test lint
+.PHONY: setup test lint lint-md
 
 # first thing after cloning
 setup:
@@ -10,4 +10,7 @@ test:
 
 lint:
 	golangci-lint run ./...
+
+lint-md:
+	npx --yes markdownlint-cli2 "**/*.md"
 
