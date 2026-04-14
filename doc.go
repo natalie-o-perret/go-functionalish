@@ -2,9 +2,10 @@
 //
 // No reflection. No interface{}. Pure generics and lazy by default.
 //
-// It provides five packages:
+// It provides six packages:
 //
 //   - [github.com/natalie-o-perret/gof/seq]: lazy Seq[T] sequence pipelines (filter, map, sort, group, zip, ...)
+//   - [github.com/natalie-o-perret/gof/pseq]: parallel sequence operations — Map, Filter, Reduce, GroupBy, ... using goroutine-per-chunk
 //   - [github.com/natalie-o-perret/gof/option]: Option[T] for explicit presence/absence, no nil
 //   - [github.com/natalie-o-perret/gof/result]: Result[T,E] for railway-oriented error handling
 //   - [github.com/natalie-o-perret/gof/validation]: Validation[T,E] for applicative error accumulation
