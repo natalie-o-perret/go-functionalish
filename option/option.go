@@ -61,7 +61,7 @@ func (o Option[T]) ToSlice() []T {
 	return []T{}
 }
 
-// ── type-transforming package-level functions ─────────────────────────────────
+// -- type-transforming package-level functions ---------------------------------
 // These must be package-level because Go methods cannot introduce new type parameters.
 
 // Map applies fn to the value inside Some, returning None unchanged.

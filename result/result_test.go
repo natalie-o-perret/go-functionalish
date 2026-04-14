@@ -84,7 +84,7 @@ func TestToOption(t *testing.T) {
 //
 // Railway-oriented programming treats a pipeline as two parallel tracks:
 // the success track (Ok) and the error track (Err).  Each Bind step may
-// switch from success → error; once on the error track every subsequent
+// switch from success -> error; once on the error track every subsequent
 // step is transparently skipped.  Map steps are pure transforms that
 // cannot fail.
 
@@ -99,15 +99,15 @@ func assertPipeErr[T any](t *testing.T, r result.Result[T, string], wantSubstr s
 	}
 }
 
-// ── Pipeline 1: Order Fulfillment (8 steps) ─────────────────────────────────
+// -- Pipeline 1: Order Fulfillment (8 steps) ---------------------------------
 //
-// string ──Bind──► RawOrder ──Bind──► VerifiedOrder ──Bind──►
+// string --Bind---> RawOrder --Bind---> VerifiedOrder --Bind--->
 //  parse            resolve customer    check inventory
 //
-// ──Map──► PricedOrder ──Bind──► PricedOrder ──Map──► FinalOrder
+// --Map---> PricedOrder --Bind---> PricedOrder --Map---> FinalOrder
 //   price              apply promo           tax
 //
-// ──Bind──► FinalOrder ──Map──► Receipt
+// --Bind---> FinalOrder --Map---> Receipt
 //  charge                issue
 
 func TestPipeline_OrderFulfillment(t *testing.T) {
@@ -273,7 +273,7 @@ func TestPipeline_OrderFulfillment(t *testing.T) {
 		if receipt.OrderID != "ORD-C-100" {
 			t.Errorf("OrderID = %s", receipt.OrderID)
 		}
-		// subtotal 119.49 × 0.90 = 107.541, tax ≈ 8.603, total ≈ 116.14
+		// subtotal 119.49 × 0.90 = 107.541, tax ~ 8.603, total ~ 116.14
 		if got := fmt.Sprintf("%.2f", receipt.Total); got != "116.14" {
 			t.Errorf("Total = %s, want 116.14", got)
 		}
@@ -284,7 +284,7 @@ func TestPipeline_OrderFulfillment(t *testing.T) {
 		if r.IsErr() {
 			t.Fatalf("expected Ok, got Err(%s)", r.UnwrapErr())
 		}
-		// subtotal 29.99, tax ≈ 2.40, total ≈ 32.39
+		// subtotal 29.99, tax ~ 2.40, total ~ 32.39
 		if got := fmt.Sprintf("%.2f", r.Unwrap().Total); got != "32.39" {
 			t.Errorf("Total = %s, want 32.39", got)
 		}
@@ -308,8 +308,8 @@ func TestPipeline_OrderFulfillment(t *testing.T) {
 
 	t.Run("short-circuits at step 7: exceeds charge limit", func(t *testing.T) {
 		// BOLT (29.99) + CHIP would be out of stock, so use BOLT + GEAR (119.49)
-		// without promo → total ≈ 129.05 < 200 → passes step 7.
-		// We need a bigger order. But CHIP is out of stock…
+		// without promo -> total ~ 129.05 < 200 -> passes step 7.
+		// We need a bigger order. But CHIP is out of stock...
 		// Instead, show MapErr adding context to a step-5 failure.
 		r := process("alice@example.com;BOLT;EXPIRED99")
 		enriched := result.MapErr(r, func(e string) string {
@@ -319,12 +319,12 @@ func TestPipeline_OrderFulfillment(t *testing.T) {
 	})
 }
 
-// ── Pipeline 2: User Registration (7 steps) ─────────────────────────────────
+// -- Pipeline 2: User Registration (7 steps) ---------------------------------
 //
-// string ──Bind──► Credentials ──Bind──► Credentials ──Bind──►
+// string --Bind---> Credentials --Bind---> Credentials --Bind--->
 //  parse            validate email       check available
 //
-// ──Bind──► Credentials ──Map──► HashedCreds ──Bind──► Account ──Map──► Session
+// --Bind---> Credentials --Map---> HashedCreds --Bind---> Account --Map---> Session
 //  password strength    hash      create account        issue session
 //
 // The entire result is then wrapped with MapErr to add pipeline context.
@@ -475,15 +475,15 @@ func TestPipeline_UserOnboarding(t *testing.T) {
 	})
 }
 
-// ── Pipeline 3: Ledger Processing (6 steps) ──────────────────────────────────
+// -- Pipeline 3: Ledger Processing (6 steps) ----------------------------------
 //
 // Demonstrates result.Try, result.MapErr, and result.FromOption
 // working together in a realistic 6-step pipeline.
 //
-// string ──Bind──► RawTx ──Bind──► RawTx ──Bind──►
+// string --Bind---> RawTx --Bind---> RawTx --Bind--->
 //  parse CSV        validate          parse amount (Try+MapErr)
 //
-// ──Bind──► EnrichedTx ──Map──► EnrichedTx ──Map──► LedgerEntry
+// --Bind---> EnrichedTx --Map---> EnrichedTx --Map---> LedgerEntry
 //  resolve acct (FromOption)  apply rate        format
 
 func TestPipeline_LedgerEntry(t *testing.T) {

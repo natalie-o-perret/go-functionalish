@@ -24,7 +24,7 @@ func main() {
 		{"Eve", "Tesla", 2020}, {"Frank", "Honda", 2013},
 	}
 
-	// ── seq (fluent style with Then + curried helpers) ──────────────────────
+	// -- seq (fluent style with Then + curried helpers) ----------------------
 	owners := seq.Then(
 		seq.OfSlice(cars).Filter(func(c Car) bool { return c.Year >= 2015 }),
 		seq.MapFn(func(c Car) string { return c.Owner }),
@@ -49,24 +49,24 @@ func main() {
 	sum := seq.Fold(seq.Range(1, 6), 0, func(acc, v int) int { return acc + v })
 	fmt.Println("sum 1-5        :", sum)
 
-	// ── option ───────────────────────────────────────────────────────────────
+	// -- option ---------------------------------------------------------------
 	name := option.Some("alice")
 	upper := option.Map(name, strings.ToUpper)
 	fmt.Println("option map     :", upper.UnwrapOr("?"))
 	fmt.Println("option none    :", option.Map(option.None[string](), strings.ToUpper).UnwrapOr("none"))
 
-	// ── result ───────────────────────────────────────────────────────────────
+	// -- result ---------------------------------------------------------------
 	res := result.Try(func() (int, error) { return 42, nil })
 	doubled := result.Map(res, func(n int) int { return n * 2 })
 	fmt.Println("result map     :", doubled.UnwrapOr(0))
 	fmt.Println("result=>option  :", doubled.ToOption().UnwrapOr(0))
 
-	// ── pipe ─────────────────────────────────────────────────────────────────
+	// -- pipe -----------------------------------------------------------------
 	out := pipe.Pipe3(" Hello World ", strings.TrimSpace, strings.ToLower,
 		func(s string) string { return strings.ReplaceAll(s, " ", "-") })
 	fmt.Println("pipe           :", out)
 
-	// ── cross-cutting: Choose (Option-based filtering, F#: Seq.choose) ──────
+	// -- cross-cutting: Choose (Option-based filtering, F#: Seq.choose) ------
 	parsed := seq.Choose(
 		seq.OfSlice([]string{"2015", "bad", "2018", "nope", "2020"}),
 		func(s string) option.Option[int] {
