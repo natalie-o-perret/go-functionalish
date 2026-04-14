@@ -115,4 +115,3 @@ func BenchmarkMap_Lightweight_PSeq_10k(b *testing.B) {
 		benchSink = pseq.Map(seq.OfSlice(data), func(n int) int { return n * 2 }).ToSlice()
 	}
 }
-

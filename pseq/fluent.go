@@ -47,4 +47,3 @@ func GroupByFn[T any, K comparable](key func(T) K, opts ...Option) func(seq.Seq[
 func CountByKeyFn[T any, K comparable](fn func(T) K, opts ...Option) func(seq.Seq[T]) map[K]int {
 	return func(s seq.Seq[T]) map[K]int { return CountByKey(s, fn, opts...) }
 }
-

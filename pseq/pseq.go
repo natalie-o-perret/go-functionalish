@@ -568,4 +568,3 @@ func ForAll[T any](s seq.Seq[T], fn func(T) bool, opts ...Option) bool {
 
 	return !failed.Load()
 }
-
