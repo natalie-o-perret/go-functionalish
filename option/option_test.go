@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/natalie-o-perret/go-functional-ish/option"
+	"github.com/natalie-o-perret/go-functionalish/option"
 )
 
 func TestFlatten(t *testing.T) {

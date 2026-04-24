@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/natalie-o-perret/go-functional-ish/pipe"
+	"github.com/natalie-o-perret/go-functionalish/pipe"
 )
 
 func TestPipe2(t *testing.T) {

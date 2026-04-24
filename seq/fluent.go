@@ -3,7 +3,7 @@ package seq
 import (
 	"cmp"
 
-	"github.com/natalie-o-perret/go-functional-ish/option"
+	"github.com/natalie-o-perret/go-functionalish/option"
 )
 
 // Then threads a Seq[T] through a type-changing function, enabling a more

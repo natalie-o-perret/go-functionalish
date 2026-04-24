@@ -1,6 +1,6 @@
 // Package validation provides a type-safe Validation type for applicative error accumulation.
 //
-// Unlike [github.com/natalie-o-perret/go-functional-ish/result] which short-circuits on the first error,
+// Unlike [github.com/natalie-o-perret/go-functionalish/result] which short-circuits on the first error,
 // Validation runs all checks and collects every failure. This makes it ideal for
 // form validation, config parsing, and anywhere you want to report all problems at once.
 //
@@ -15,8 +15,8 @@
 package validation
 
 import (
-	"github.com/natalie-o-perret/go-functional-ish/option"
-	"github.com/natalie-o-perret/go-functional-ish/result"
+	"github.com/natalie-o-perret/go-functionalish/option"
+	"github.com/natalie-o-perret/go-functionalish/result"
 )
 
 // Validation[T, E] holds either a successful value of type T

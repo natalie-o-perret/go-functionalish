@@ -5,7 +5,7 @@ import (
 	"iter"
 	"slices"
 
-	"github.com/natalie-o-perret/go-functional-ish/option"
+	"github.com/natalie-o-perret/go-functionalish/option"
 )
 
 // Numeric is a constraint for types supporting arithmetic operations.

@@ -6,8 +6,8 @@ import (
 
 	lop "github.com/samber/lo/parallel"
 
-	"github.com/natalie-o-perret/go-functional-ish/pseq"
-	"github.com/natalie-o-perret/go-functional-ish/seq"
+	"github.com/natalie-o-perret/go-functionalish/pseq"
+	"github.com/natalie-o-perret/go-functionalish/seq"
 )
 
 // ---------------------------------------------------------------------------

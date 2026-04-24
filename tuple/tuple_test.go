@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/natalie-o-perret/go-functional-ish/tuple"
+	"github.com/natalie-o-perret/go-functionalish/tuple"
 )
 
 func TestOf(t *testing.T) {
