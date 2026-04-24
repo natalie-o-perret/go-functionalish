@@ -129,3 +129,27 @@ func TestMap2(t *testing.T) {
 		t.Fatal("expected None when second is None")
 	}
 }
+func TestTee(t *testing.T) {
+	var seen int
+	out := option.Tee(option.Some(7), func(v int) { seen = v })
+	if seen != 7 || out.Unwrap() != 7 {
+		t.Fatal("Tee should call fn and return Some unchanged")
+	}
+	seen = 0
+	out2 := option.Tee(option.None[int](), func(v int) { seen = v })
+	if seen != 0 || !out2.IsNone() {
+		t.Fatal("Tee should not call fn on None")
+	}
+}
+func TestTeeNone(t *testing.T) {
+	called := false
+	out := option.TeeNone(option.None[int](), func() { called = true })
+	if !called || !out.IsNone() {
+		t.Fatal("TeeNone should call fn on None")
+	}
+	called = false
+	out2 := option.TeeNone(option.Some(1), func() { called = true })
+	if called || out2.UnwrapOr(0) != 1 {
+		t.Fatal("TeeNone should not call fn on Some")
+	}
+}

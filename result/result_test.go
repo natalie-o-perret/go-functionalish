@@ -706,3 +706,87 @@ func TestZip(t *testing.T) {
 		t.Fatalf("got %s", got2.UnwrapErr())
 	}
 }
+func TestMap2(t *testing.T) {
+	a := result.Ok[int, string](3)
+	b := result.Ok[int, string](4)
+	got := result.Map2(a, b, func(x, y int) int { return x + y })
+	if got.Unwrap() != 7 {
+		t.Fatalf("got %d", got.Unwrap())
+	}
+	errA := result.Err[int, string]("first")
+	got2 := result.Map2(errA, b, func(x, y int) int { return x + y })
+	if got2.UnwrapErr() != "first" {
+		t.Fatal("expected first err to win")
+	}
+	errB := result.Err[int, string]("second")
+	got3 := result.Map2(a, errB, func(x, y int) int { return x + y })
+	if got3.UnwrapErr() != "second" {
+		t.Fatal("expected second err to propagate")
+	}
+}
+func TestContains(t *testing.T) {
+	if !result.Contains(result.Ok[int, string](42), 42) {
+		t.Fatal("expected true")
+	}
+	if result.Contains(result.Ok[int, string](42), 99) {
+		t.Fatal("expected false for wrong value")
+	}
+	if result.Contains(result.Err[int, string]("e"), 42) {
+		t.Fatal("expected false on Err")
+	}
+}
+func TestSequence(t *testing.T) {
+	rs := []result.Result[int, string]{
+		result.Ok[int, string](1),
+		result.Ok[int, string](2),
+		result.Ok[int, string](3),
+	}
+	got := result.Sequence(rs)
+	if !got.IsOk() {
+		t.Fatal("expected Ok")
+	}
+	s := got.Unwrap()
+	if len(s) != 3 || s[0] != 1 || s[1] != 2 || s[2] != 3 {
+		t.Fatalf("got %v", s)
+	}
+	// short-circuits on first Err
+	rsErr := []result.Result[int, string]{
+		result.Ok[int, string](1),
+		result.Err[int, string]("boom"),
+		result.Ok[int, string](3),
+	}
+	got2 := result.Sequence(rsErr)
+	if got2.IsOk() || got2.UnwrapErr() != "boom" {
+		t.Fatal("expected Err(boom)")
+	}
+}
+func TestTraverse(t *testing.T) {
+	items := []string{"1", "2", "3"}
+	got := result.Traverse(items, func(s string) result.Result[int, string] {
+if s == "bad" {
+return result.Err[int, string]("bad input")
+}
+n := 0
+for _, c := range s {
+n = n*10 + int(c-'0')
+}
+return result.Ok[int, string](n)
+})
+	if !got.IsOk() {
+		t.Fatalf("expected Ok, got %s", got.UnwrapErr())
+	}
+	v := got.Unwrap()
+	if len(v) != 3 || v[0] != 1 || v[1] != 2 || v[2] != 3 {
+		t.Fatalf("got %v", v)
+	}
+	items2 := []string{"1", "bad", "3"}
+	got2 := result.Traverse(items2, func(s string) result.Result[int, string] {
+if s == "bad" {
+return result.Err[int, string]("bad input")
+}
+return result.Ok[int, string](0)
+})
+	if got2.IsOk() || got2.UnwrapErr() != "bad input" {
+		t.Fatal("expected Err(bad input)")
+	}
+}

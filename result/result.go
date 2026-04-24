@@ -151,3 +151,47 @@ func TeeErr[T, E any](r Result[T, E], fn func(E)) Result[T, E] {
 	}
 	return r
 }
+
+// Map2 combines two Results with fn. Short-circuits on the first Err.
+func Map2[A, B, R, E any](ra Result[A, E], rb Result[B, E], fn func(A, B) R) Result[R, E] {
+	if ra.ok && rb.ok {
+		return Ok[R, E](fn(ra.value, rb.value))
+	}
+	if !ra.ok {
+		return Err[R, E](ra.err)
+	}
+	return Err[R, E](rb.err)
+}
+
+// Contains reports whether r is Ok and its value equals v.
+func Contains[T comparable, E any](r Result[T, E], v T) bool {
+	return r.ok && r.value == v
+}
+
+// Sequence converts a slice of Results into a Result of a slice.
+// Short-circuits on the first Err.
+func Sequence[T, E any](rs []Result[T, E]) Result[[]T, E] {
+	values := make([]T, 0, len(rs))
+	for _, r := range rs {
+		if !r.ok {
+			return Err[[]T, E](r.err)
+		}
+		values = append(values, r.value)
+	}
+	return Ok[[]T, E](values)
+}
+
+// Traverse applies fn to each item and sequences the results.
+// Short-circuits on the first Err.
+func Traverse[T, R, E any](items []T, fn func(T) Result[R, E]) Result[[]R, E] {
+	values := make([]R, 0, len(items))
+	for _, item := range items {
+		r := fn(item)
+		if !r.ok {
+			return Err[[]R, E](r.err)
+		}
+		values = append(values, r.value)
+	}
+	return Ok[[]R, E](values)
+}
+
