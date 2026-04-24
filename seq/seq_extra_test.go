@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/natalie-o-perret/go-functionalish/option"
+	"github.com/natalie-o-perret/go-functionalish/result"
 	"github.com/natalie-o-perret/go-functionalish/seq"
 )
 
@@ -423,4 +424,44 @@ func TestInterleave(t *testing.T) {
 			t.Fatalf("[%d] got %d want %d", i, v, want[i])
 		}
 	}
+}
+func TestIntersperse(t *testing.T) {
+	assertSlice(t, seq.OfSlice([]int{1, 2, 3}).Intersperse(0).ToSlice(), []int{1, 0, 2, 0, 3})
+	assertSlice(t, seq.OfSlice([]int{42}).Intersperse(0).ToSlice(), []int{42})
+	assertSlice(t, seq.Empty[int]().Intersperse(0).ToSlice(), []int{})
+}
+func TestStepBy(t *testing.T) {
+	assertSlice(t, seq.Range(0, 6).StepBy(2).ToSlice(), []int{0, 2, 4})
+	assertSlice(t, seq.Range(0, 6).StepBy(3).ToSlice(), []int{0, 3})
+	assertSlice(t, seq.Range(0, 6).StepBy(1).ToSlice(), []int{0, 1, 2, 3, 4, 5})
+}
+func TestStepByPanic(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic")
+		}
+	}()
+	seq.Range(0, 5).StepBy(0)
+}
+func TestToMap(t *testing.T) {
+	pairs := seq.OfSlice([]seq.Pair[string, int]{
+{First: "a", Second: 1},
+{First: "b", Second: 2},
+})
+	m := seq.ToMap(pairs)
+	if m["a"] != 1 || m["b"] != 2 || len(m) != 2 {
+		t.Fatalf("got %v", m)
+	}
+}
+func TestToMapBy(t *testing.T) {
+	type kv struct{ k string; v int }
+	s := seq.OfSlice([]kv{{"x", 10}, {"y", 20}})
+	m := seq.ToMapBy(s, func(p kv) string { return p.k }, func(p kv) int { return p.v })
+	if m["x"] != 10 || m["y"] != 20 {
+		t.Fatalf("got %v", m)
+	}
+}
+func TestOfResult(t *testing.T) {
+	assertSlice(t, seq.OfResult(result.Ok[int, string](42)).ToSlice(), []int{42})
+	assertSlice(t, seq.OfResult(result.Err[int, string]("e")).ToSlice(), []int{})
 }

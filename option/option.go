@@ -126,6 +126,24 @@ func DefaultWith[T any](o Option[T], fn func() T) T {
 	return fn()
 }
 
+// Tee calls fn with the value if Some, returning o unchanged.
+// Useful for logging or side effects in a pipeline.
+func Tee[T any](o Option[T], fn func(T)) Option[T] {
+	if o.valid {
+		fn(o.value)
+	}
+	return o
+}
+
+// TeeNone calls fn if None, returning o unchanged.
+// Useful for logging or side effects on the absent path.
+func TeeNone[T any](o Option[T], fn func()) Option[T] {
+	if !o.valid {
+		fn()
+	}
+	return o
+}
+
 // Pair holds two values of potentially different types.
 type Pair[T, U any] struct {
 	First  T

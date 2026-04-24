@@ -854,3 +854,64 @@ func CountByKey[T any, K comparable](s Seq[T], fn func(T) K) map[K]int {
 	}
 	return counts
 }
+
+// -- additional lazy pipeline methods (seq_extra) ------------------------------
+
+// Intersperse inserts sep between every element of s lazily.
+func (s Seq[T]) Intersperse(sep T) Seq[T] {
+	return func(yield func(T) bool) {
+		first := true
+		for v := range s {
+			if !first {
+				if !yield(sep) {
+					return
+				}
+			}
+			if !yield(v) {
+				return
+			}
+			first = false
+		}
+	}
+}
+
+// StepBy yields every n-th element starting from the first. Panics if n < 1.
+func (s Seq[T]) StepBy(n int) Seq[T] {
+	if n < 1 {
+		panic("seq: StepBy n must be >= 1")
+	}
+	return func(yield func(T) bool) {
+		i := 0
+		for v := range s {
+			if i%n == 0 {
+				if !yield(v) {
+					return
+				}
+			}
+			i++
+		}
+	}
+}
+
+// -- additional terminal functions (seq_extra) ---------------------------------
+
+// ToMap materialises a Seq of Pair[K,V] into a map.
+// Later pairs overwrite earlier ones on duplicate keys.
+func ToMap[K comparable, V any](s Seq[Pair[K, V]]) map[K]V {
+	m := make(map[K]V)
+	for p := range s {
+		m[p.First] = p.Second
+	}
+	return m
+}
+
+// ToMapBy materialises s into a map using key and val extractors.
+// Later values overwrite earlier ones on duplicate keys.
+func ToMapBy[T any, K comparable, V any](s Seq[T], key func(T) K, val func(T) V) map[K]V {
+	m := make(map[K]V)
+	for v := range s {
+		m[key(v)] = val(v)
+	}
+	return m
+}
+
