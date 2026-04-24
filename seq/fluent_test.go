@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/natalie-o-perret/gof/option"
-	"github.com/natalie-o-perret/gof/pipe"
-	"github.com/natalie-o-perret/gof/seq"
+	"github.com/natalie-o-perret/go-functional-ish/option"
+	"github.com/natalie-o-perret/go-functional-ish/pipe"
+	"github.com/natalie-o-perret/go-functional-ish/seq"
 )
 
 type person struct {

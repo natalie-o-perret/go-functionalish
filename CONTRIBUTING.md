@@ -3,8 +3,8 @@
 ## Setup
 
 ```sh
-git clone https://github.com/natalie-o-perret/gof.git
-cd gof
+git clone https://github.com/natalie-o-perret/go-functional-ish.git
+cd go-functional-ish
 make setup   # installs the commit-msg hook
 ```
 
