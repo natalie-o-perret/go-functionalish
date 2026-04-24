@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Contributing](https://img.shields.io/badge/contributing-guide-blue)](CONTRIBUTING.md)
 
-A cohesive, opinionated, type-safe functional programming library for Go 1.24+.  
+A cohesive, opinionated, type-safe functional programming library for Go 1.24+.
 No reflection. No `interface{}`. Pure generics and lazy by default.
 
 > [!NOTE]
@@ -14,7 +14,7 @@ No reflection. No `interface{}`. Pure generics and lazy by default.
 > Unapologetically not "idiomatic Go."
 >
 > Go gave us generics 17 years after C# and 18 after Java (the latter still erases them at runtime).
-> We're using them, for `Option[T]`, `Result[T,E]`, and lazy pipelines
+> We're using them for `Option[T]`, `Result[T,E]`, and lazy pipelines
 > instead of `if err != nil` sixty times per file.
 
 ## Packages
@@ -147,7 +147,7 @@ inspired by [FSharp.Collections.ParallelSeq](https://github.com/fsprojects/FShar
 and Go's [lo/lop](https://github.com/samber/lo) parallel helpers.
 
 Every function materialises the input `Seq[T]`, partitions it into chunks,
-dispatches one goroutine per chunk, and collects results — **order is always preserved**.
+dispatches one goroutine per chunk, and collects results. **Order is always preserved.**
 Parallelism defaults to `runtime.GOMAXPROCS(0)` and is tunable via `WithWorkers`.
 
 ```go
@@ -204,7 +204,7 @@ seq.ToSliceFn[Result](),
 
 **When to use `pseq` vs `seq`:** parallel execution pays off when the per-element
 work is CPU-heavy (parsing, math, serialisation). For lightweight lambdas
-(`n*2`, field access), the goroutine overhead dominates — stick with `seq`.
+(`n*2`, field access), the goroutine overhead dominates, so stick with `seq`.
 
 ### option: explicit optionality
 
@@ -321,7 +321,7 @@ res2 := result.FromOption(opt, errors.New("not found"))
 
 ### kv: key-value pipelines
 
-Functional operations over `iter.Seq2[K,V]` — the lazy, composable counterpart to
+Functional operations over `iter.Seq2[K,V]` - the lazy, composable counterpart to
 Go's `maps` package.
 
 ```go
@@ -362,69 +362,6 @@ kv.ContainsKey(s, "mango") // => false
 pairs := kv.ToSeq(s).Filter(func(p seq.Pair[string, int]) bool { return p.Second > 10 }).ToSlice()
 back  := kv.Collect(kv.FromSeq(seq.OfSlice(pairs)))
 ```
-
-### pipe : threading values
-
-**Naming convention** - the suffix tells you the type contract:
-
-| Suffix  | Variant                                | Type contract                                          | Example                 |
-|---------|----------------------------------------|--------------------------------------------------------|-------------------------|
-| `EndoN` | `PipeEndoN`, `ComposeEndoN`            | variadic, all steps `T => T` (same type, endomorphic)  | string transforms       |
-| `2..8`  | `Pipe2`-`Pipe8`, `Compose2`-`Compose4` | fixed-arity, each step may change type (`A => B => C`) | parse + validate + save |
-
-The compiler enforces this: `PipeEndoN` simply cannot accept a function whose output
-type differs from its input. `Pipe2`-`Pipe8` each declare distinct type params
-`A, B, C, ...` so the change is explicit in the signature itself.
-
-```go
-// Same-type chain (T => T): use PipeEndoN - unlimited steps, all string => string
-processed := pipe.PipeEndoN(
-rawInput,
-strings.TrimSpace,
-strings.ToLower,
-strings.Title,
-sanitize,
-)
-
-// Type-changing chain: use Pipe2-Pipe8
-validated := pipe.Pipe3(
-rawInput,          // string
-strings.TrimSpace, // string => string
-parse,             // string => int
-validate,          // int    => error
-)
-
-// Tap: side-effect (logging, metrics) without changing the value
-result := pipe.Pipe4(
-rawInput,
-strings.TrimSpace,
-pipe.Tap(func (s string) { log.Println("trimmed:", s) }),
-strings.ToUpper,
-validate,
-)
-```
-
-#### Pipelines longer than 8 type-changing steps
-
-Use `ComposeEndoN`/`Compose2`-`Compose4` to collapse multiple steps into one slot:
-
-```go
-pipe.Pipe5(
-seq.OfSlice(people),
-seq.FilterFn(adult), // Seq[Person] => Seq[Person]
-seq.MapFn(getName), // Seq[Person] => Seq[string]
-seq.DistinctFn[string](), // Seq[string] => Seq[string]
-pipe.ComposeEndoN(        // group same-type steps into one slot
-seq.SortWithFn[string](cmp.Compare),
-seq.TruncateFn[string](3),
-),
-seq.ToSliceFn[string](), // Seq[string] => []string
-)
-```
-
-`pipe.ComposeEndoN` merges consecutive same-type steps (`T=>T`) into one pipe slot.
-`pipe.Compose2`-`Compose4` do the same for type-changing steps (`A=>B=>C`).
-Together they cover pipelines of any length.
 
 ## Design notes
 
@@ -509,7 +446,7 @@ Benchmarks on `[]int` pipelines (Intel Core Ultra 7, 8 cores):
 | **ForEach 10k** |                  — |       **328 µs** |                    2,904 µs | **8.9× faster**  |
 | **GroupBy 10k** |                  — |     **4,587 µs** |                    5,170 µs | **1.13× faster** |
 
-#### Lightweight workload (`n*3+1` — exposes overhead)
+#### Lightweight workload (`n*3+1` - exposes overhead)
 
 | Operation    | `seq` (sequential) | `pseq` (chunked) | `lo/parallel` (per-element) | pseq vs lo       |
 |--------------|-------------------:|-----------------:|----------------------------:|------------------|
@@ -524,13 +461,13 @@ Benchmarks on `[]int` pipelines (Intel Core Ultra 7, 8 cores):
 | **B/op**      | 798 KB | 1,067 KB      | lo uses 1.3× more memory           |
 | **allocs/op** | **66** | 20,051        | lo allocates **303× more objects** |
 
-**Why?** `lo` does `go func(...)` inside a `for i, item := range` — 10k goroutines
+**Why?** `lo` does `go func(...)` inside a `for i, item := range`, spawning 10k goroutines
 for 10k items. `pseq` splits into ~8 chunks. Goroutine spawn+schedule is ~2-4 µs each,
 so `lo` pays ~20-40 ms in scheduling alone for 10k items, while `pseq` pays ~16-32 µs.
 When the per-element work is heavy enough, both approaches saturate the CPUs and converge.
-When it isn't, `lo` is 10-13× slower than `pseq` — and even slower than sequential `seq`.
+When it isn't, `lo` is 10-13x slower than `pseq`, and even slower than sequential `seq`.
 
-**Rule of thumb:** for lightweight lambdas, don't parallelize at all — use `seq`.
+**Rule of thumb:** for lightweight lambdas, don't parallelize at all - use `seq`.
 For CPU-heavy work (parsing, crypto, compression, complex transforms), `pseq` gives
 the parallel speedup with a fraction of the scheduling cost.
 
