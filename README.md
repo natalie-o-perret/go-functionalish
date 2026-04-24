@@ -27,17 +27,19 @@ No reflection. No `interface{}`. Pure generics and lazy by default.
 | `result`     | `Result[T,E]`: railway-oriented error handling                  |
 | `validation` | `Validation[T,E]`: applicative error accumulation               |
 | `pipe`       | `Pipe2`...`Pipe8`: F#-style `\|>` operator equivalent           |
+| `kv`         | Lazy `Seq2[K,V]`: functional pipelines over `iter.Seq2` / maps  |
 
 ## Quick start
 
 ```go
 import (
-    "github.com/natalie-o-perret/go-functionalish/seq"
-    "github.com/natalie-o-perret/go-functionalish/pseq"
-    "github.com/natalie-o-perret/go-functionalish/option"
-    "github.com/natalie-o-perret/go-functionalish/result"
-    "github.com/natalie-o-perret/go-functionalish/validation"
-    "github.com/natalie-o-perret/go-functionalish/pipe"
+"github.com/natalie-o-perret/go-functionalish/seq"
+"github.com/natalie-o-perret/go-functionalish/pseq"
+"github.com/natalie-o-perret/go-functionalish/option"
+"github.com/natalie-o-perret/go-functionalish/result"
+"github.com/natalie-o-perret/go-functionalish/validation"
+"github.com/natalie-o-perret/go-functionalish/pipe"
+"github.com/natalie-o-perret/go-functionalish/kv"
 )
 ```
 
@@ -47,35 +49,35 @@ import (
 type Car struct { Year int; Owner, Model string }
 
 cars := []Car{
-    {2012, "Alice", "Toyota"}, {2016, "Bob", "Honda"},
-    {2018, "Charlie", "Ford"}, {2015, "Diana", "BMW"},
+{2012, "Alice", "Toyota"}, {2016, "Bob", "Honda"},
+{2018, "Charlie", "Ford"}, {2015, "Diana", "BMW"},
 }
 
 // Filter + Map (Map is pkg-level due to Go type system)
 owners := seq.Map(
-    seq.OfSlice(cars).Filter(func(c Car) bool { return c.Year >= 2015 }),
-    func(c Car) string { return c.Owner },
+seq.OfSlice(cars).Filter(func (c Car) bool { return c.Year >= 2015 }),
+func (c Car) string { return c.Owner },
 ).ToSlice()
 // => ["Bob", "Charlie", "Diana"]
 
 // Sort, group, distinct
-byCar := seq.GroupBy(seq.OfSlice(cars), func(c Car) string { return c.Model })
+byCar := seq.GroupBy(seq.OfSlice(cars), func (c Car) string { return c.Model })
 
 unique := seq.DistinctBy(
-    seq.OfSlice(cars).SortWith(func(a, b Car) int { return cmp.Compare(a.Model, b.Model) }),
-    func(c Car) string { return c.Model },
+seq.OfSlice(cars).SortWith(func (a, b Car) int { return cmp.Compare(a.Model, b.Model) }),
+func (c Car) string { return c.Model },
 ).ToSlice()
 
 // Short-circuiting terminals
 first := seq.OfSlice(cars).Filter(...).TryHead() // => option.Option[Car]
-count := seq.OfSlice(cars).CountBy(func(c Car) bool { return c.Year >= 2015 })
+count := seq.OfSlice(cars).CountBy(func (c Car) bool { return c.Year >= 2015 })
 
 // Generators
-squares := seq.Map(seq.Range(1, 6), func(n int) int { return n * n }).ToSlice()
+squares := seq.Map(seq.Range(1, 6), func (n int) int { return n * n }).ToSlice()
 // => [1 4 9 16 25]
 
 // RangeStep: custom step, supports descending
-evens := seq.RangeStep(0, 10, 2).ToSlice()  // => [0 2 4 6 8]
+evens := seq.RangeStep(0, 10, 2).ToSlice() // => [0 2 4 6 8]
 countdown := seq.RangeStep(5, 0, -1).ToSlice() // => [5 4 3 2 1]
 
 // Zip / Interleave
@@ -90,31 +92,52 @@ pattern := seq.OfSlice([]string{"ping", "pong"}).Cycle().Truncate(5).ToSlice()
 // => ["ping", "pong", "ping", "pong", "ping"]
 
 // Unfold: generate from a seed state (e.g. Fibonacci)
-fibs := seq.Unfold([2]int{0, 1}, func(s [2]int) option.Option[seq.Pair[int, [2]int]] {
-    if s[0] > 20 {
-        return option.None[seq.Pair[int, [2]int]]()
-    }
-    return option.Some(seq.Pair[int, [2]int]{First: s[0], Second: [2]int{s[1], s[0] + s[1]}})
+fibs := seq.Unfold([2]int{0, 1}, func (s [2]int) option.Option[seq.Pair[int, [2]int]] {
+if s[0] > 20 {
+return option.None[seq.Pair[int, [2]int]]()
+}
+return option.Some(seq.Pair[int, [2]int]{First: s[0], Second: [2]int{s[1], s[0] + s[1]}})
 }).ToSlice()
 // => [0 1 1 2 3 5 8 13]
 
 // Partition: one pass, two slices
-evens, odds := seq.Partition(seq.Range(1, 7), func(n int) bool { return n%2 == 0 })
+evens, odds := seq.Partition(seq.Range(1, 7), func (n int) bool { return n%2 == 0 })
 // evens => [2 4 6],  odds => [1 3 5]
 
 // OfMap: iterate over a map
 counts := seq.CountByKey(seq.OfMap(map[string]int{"a": 1, "b": 2}),
-    func(p seq.Pair[string, int]) string { return p.First })
+func (p seq.Pair[string, int]) string { return p.First })
 // => map[a:1 b:1]
 
 // CountByKey: occurrence counts
 freq := seq.CountByKey(seq.OfSlice([]string{"a", "b", "a", "c", "a", "b"}),
-    func(s string) string { return s })
+func (s string) string { return s })
 // => map[a:3 b:2 c:1]
 
 // OfOption: lift an Option into a Seq
-seq.OfOption(option.Some(42)).ToSlice()   // => [42]
+seq.OfOption(option.Some(42)).ToSlice() // => [42]
 seq.OfOption(option.None[int]()).ToSlice() // => []
+
+// OfResult: lift a Result into a Seq (Ok => singleton, Err => empty)
+seq.OfResult(result.Ok[int, string](7)).ToSlice()  // => [7]
+seq.OfResult(result.Err[int, string]("e")).ToSlice() // => []
+
+// Intersperse: insert separator between elements
+seq.OfSlice([]int{1, 2, 3}).Intersperse(0).ToSlice() // => [1 0 2 0 3]
+
+// StepBy: yield every n-th element starting from the first
+seq.Range(0, 10).StepBy(3).ToSlice() // => [0 3 6 9]
+
+// ToMap / ToMapBy: materialise into a map
+m := seq.ToMap(seq.OfSlice([]seq.Pair[string, int]{{"a", 1}, {"b", 2}}))
+// => map[a:1 b:2]
+
+type Car struct { Year int; Owner, Model string }
+byOwner := seq.ToMapBy(seq.OfSlice(cars),
+    func(c Car) string { return c.Owner },
+    func(c Car) int    { return c.Year },
+)
+// => map[Alice:2012 Bob:2016 ...]
 ```
 
 ### pseq: parallel sequences
@@ -131,21 +154,21 @@ Parallelism defaults to `runtime.GOMAXPROCS(0)` and is tunable via `WithWorkers`
 data := seq.OfSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
 
 // Parallel Map (order preserved)
-doubled := pseq.Map(data, func(n int) int { return n * 2 }).ToSlice()
+doubled := pseq.Map(data, func (n int) int { return n * 2 }).ToSlice()
 // => [2 4 6 8 10 12 14 16 18 20]
 
 // Parallel Filter
-evens := pseq.Filter(data, func(n int) bool { return n%2 == 0 }).ToSlice()
+evens := pseq.Filter(data, func (n int) bool { return n%2 == 0 }).ToSlice()
 // => [2 4 6 8 10]
 
 // Parallel Reduce (fn must be associative)
-sum, _ := pseq.Reduce(data, func(a, b int) int { return a + b })
+sum, _ := pseq.Reduce(data, func (a, b int) int { return a + b })
 // => 55
 
 // Parallel GroupBy
-groups := pseq.GroupBy(data, func(n int) string {
-    if n%2 == 0 { return "even" }
-    return "odd"
+groups := pseq.GroupBy(data, func (n int) string {
+if n%2 == 0 { return "even" }
+return "odd"
 })
 // => map[even:[2 4 6 8 10] odd:[1 3 5 7 9]]
 
@@ -153,29 +176,29 @@ groups := pseq.GroupBy(data, func(n int) string {
 pseq.Map(data, heavyFn, pseq.WithWorkers(8))
 
 // Parallel Exists / ForAll (short-circuit across goroutines)
-pseq.Exists(data, func(n int) bool { return n > 9 })  // => true
-pseq.ForAll(data, func(n int) bool { return n > 0 })   // => true
+pseq.Exists(data, func (n int) bool { return n > 9 }) // => true
+pseq.ForAll(data, func (n int) bool { return n > 0 }) // => true
 
 // Parallel Sum / SumBy
-pseq.Sum(data)  // => 55
+pseq.Sum(data) // => 55
 
 // Parallel Partition
 yes, no := pseq.Partition(data, func(n int) bool { return n <= 5 })
 // yes => [1 2 3 4 5], no => [6 7 8 9 10]
 
 // Parallel Choose (filter+map with Option)
-pseq.Choose(data, func(n int) option.Option[string] {
-    if n%3 == 0 { return option.Some(fmt.Sprintf("fizz:%d", n)) }
-    return option.None[string]()
+pseq.Choose(data, func (n int) option.Option[string] {
+if n%3 == 0 { return option.Some(fmt.Sprintf("fizz:%d", n)) }
+return option.None[string]()
 }).ToSlice()
 // => ["fizz:3" "fizz:6" "fizz:9"]
 
 // Pipe integration via curried helpers
 pipe.Pipe3(
-    seq.OfSlice(bigData),
-    pseq.FilterFn(isValid, pseq.WithWorkers(8)),
-    pseq.MapFn(transform, pseq.WithWorkers(8)),
-    seq.ToSliceFn[Result](),
+seq.OfSlice(bigData),
+pseq.FilterFn(isValid, pseq.WithWorkers(8)),
+pseq.MapFn(transform, pseq.WithWorkers(8)),
+seq.ToSliceFn[Result](),
 )
 ```
 
@@ -191,64 +214,68 @@ name := option.Some("Alice")
 none := option.None[string]()
 
 upper := option.Map(name, strings.ToUpper) // => Some("ALICE")
-option.Map(none, strings.ToUpper)           // => None
+option.Map(none, strings.ToUpper) // => None
 
 name.UnwrapOr("anonymous") // => "Alice"
 none.UnwrapOr("anonymous") // => "anonymous"
 
 // DefaultWith: lazy default - fn is only called when None
-val := option.DefaultWith(none, func() string { return expensiveDefault() })
+val := option.DefaultWith(none, func () string { return expensiveDefault() })
 
 // Contains: value equality check
-option.Contains(option.Some(42), 42)    // => true
+option.Contains(option.Some(42), 42) // => true
 option.Contains(option.None[int](), 42) // => false
 
+// Tee / TeeNone: side-effects without breaking the chain
+opt := option.Tee(option.Some(42), func(v int) { log.Println("got", v) }) // => Some(42)
+opt  = option.TeeNone(option.None[int](), func() { log.Println("missing") }) // => None
+
 // Map2: combine two Options
-option.Map2(option.Some(2), option.Some(3), func(a, b int) int { return a + b }) // => Some(5)
-option.Map2(option.None[int](), option.Some(3), func(a, b int) int { return a + b }) // => None
+option.Map2(option.Some(2), option.Some(3), func (a, b int) int { return a + b }) // => Some(5)
+option.Map2(option.None[int](), option.Some(3), func (a, b int) int { return a + b }) // => None
 
 // OrElse: fallback if None
-resolved := option.OrElse(lookupCache(key), func() option.Option[string] {
-    return lookupDB(key)
+resolved := option.OrElse(lookupCache(key), func () option.Option[string] {
+return lookupDB(key)
 })
 
 // Flatten: unwrap Option[Option[T]]
-option.Flatten(option.Some(option.Some(42)))          // => Some(42)
-option.Flatten(option.None[option.Option[int]]())     // => None
+option.Flatten(option.Some(option.Some(42))) // => Some(42)
+option.Flatten(option.None[option.Option[int]]()) // => None
 
 // Chain optional lookups with Bind
 profile := option.Bind(findUser(id), func(u User) option.Option[Profile] {
-    return findProfile(u.ProfileID)
+return findProfile(u.ProfileID)
 })
 
 // Integrates with seq
 firstModern := seq.OfSlice(cars).
-    Filter(func(c Car) bool { return c.Year >= 2015 }).
-    TryHead() // => option.Option[Car]
+Filter(func (c Car) bool { return c.Year >= 2015 }).
+TryHead() // => option.Option[Car]
 ```
 
 ### result : railway-oriented error handling
 
 ```go
 // Wrap Go's (T, error) convention
-res := result.Try(func() (User, error) { return db.FindUser(id) })
+res := result.Try(func () (User, error) { return db.FindUser(id) })
 
 // Railway pipeline: chain Bind (may fail) and Map (pure transforms).
 // Once on the error track, every subsequent step is skipped.
-r1 := parseRequest(raw)                       // step 1: Bind
-r2 := result.Bind(r1, authenticate)           // step 2: Bind
+r1 := parseRequest(raw) // step 1: Bind
+r2 := result.Bind(r1, authenticate) // step 2: Bind
 r3 := result.Map(r2, normalize)               // step 3: Map (pure)
-r4 := result.Bind(r3, save)                   // step 4: Bind
-r5 := result.Map(r4, formatResponse)          // step 5: Map (pure)
+r4 := result.Bind(r3, save) // step 4: Bind
+r5 := result.Map(r4, formatResponse) // step 5: Map (pure)
 // r5 is either Ok(response) or Err from whichever step failed first.
 
 // Tee / TeeErr: side-effects without breaking the chain - great for logging
-r := result.Tee(r3, func(v Request) { log.Printf("normalised: %v", v) })
-r = result.TeeErr(r, func(e string) { log.Printf("failed: %s", e) })
+r := result.Tee(r3, func (v Request) { log.Printf("normalised: %v", v) })
+r = result.TeeErr(r, func (e string) { log.Printf("failed: %s", e) })
 
 // OrElse: try a fallback on Err
-user := result.OrElse(lookupPrimary(id), func(e error) result.Result[User, error] {
-    return lookupReplica(id)
+user := result.OrElse(lookupPrimary(id), func (e error) result.Result[User, error] {
+return lookupReplica(id)
 })
 
 // Flatten: unwrap Result[Result[T,E],E]
@@ -259,24 +286,91 @@ result.Flatten(result.Ok[result.Result[int, string], string](result.Ok[int, stri
 result.Zip(result.Ok[int, string](1), result.Ok[string, string]("hi"))
 // => Ok({1, "hi"})
 
+// Map2: combine two Results (short-circuits on first Err)
+result.Map2(
+    result.Ok[int, string](3),
+    result.Ok[int, string](4),
+    func(a, b int) int { return a + b },
+) // => Ok(7)
+
+// Contains: value equality check
+result.Contains(result.Ok[int, string](42), 42) // => true
+
+// Sequence: []Result => Result[[]T] (short-circuits on first Err)
+result.Sequence([]result.Result[int, string]{
+    result.Ok[int, string](1),
+    result.Ok[int, string](2),
+}) // => Ok([1 2])
+
+// Traverse: map + sequence in one pass (short-circuits on first Err)
+result.Traverse([]string{"1", "2", "3"}, func(s string) result.Result[int, string] {
+    n, err := strconv.Atoi(s)
+    if err != nil { return result.Err[int, string](err.Error()) }
+    return result.Ok[int, string](n)
+}) // => Ok([1 2 3])
+
 // MapErr adds context to errors
-wrapped := result.MapErr(r5, func(e string) string {
-    return "request failed: " + e
+wrapped := result.MapErr(r5, func (e string) string {
+return "request failed: " + e
 })
 
 // Interop with option
-opt := res.ToOption()                          // Ok => Some, Err => None
+opt := res.ToOption() // Ok => Some, Err => None
 res2 := result.FromOption(opt, errors.New("not found"))
+```
+
+### kv: key-value pipelines
+
+Functional operations over `iter.Seq2[K,V]` — the lazy, composable counterpart to
+Go's `maps` package.
+
+```go
+inventory := map[string]int{
+    "apple": 50, "banana": 3, "cherry": 120, "date": 0,
+}
+
+// Of wraps a map into a lazy Seq2
+s := kv.Of(inventory)
+
+// Filter: keep only non-zero stock
+inStock := kv.Filter(s, func(_ string, qty int) bool { return qty > 0 })
+
+// MapValues: apply a discount
+discounted := kv.MapValues(inStock, func(qty int) int { return qty * 9 / 10 })
+
+// Collect: materialise back to a map
+result := kv.Collect(discounted)
+// => map[apple:45 cherry:108]
+
+// Keys / Values: extract as seq.Seq
+keys := kv.Keys(s).SortWith(cmp.Compare).ToSlice()
+// => [apple banana cherry date]
+
+// MapKeys: transform keys
+upper := kv.Collect(kv.MapKeys(s, strings.ToUpper))
+// => map[APPLE:50 BANANA:3 ...]
+
+// Fold: reduce to a single value
+total := kv.Fold(s, 0, func(acc int, _ string, qty int) int { return acc + qty })
+// => 173
+
+// ContainsKey: short-circuiting membership test
+kv.ContainsKey(s, "apple") // => true
+kv.ContainsKey(s, "mango") // => false
+
+// ToSeq / FromSeq: bridge to seq.Seq[seq.Pair[K,V]]
+pairs := kv.ToSeq(s).Filter(func(p seq.Pair[string, int]) bool { return p.Second > 10 }).ToSlice()
+back  := kv.Collect(kv.FromSeq(seq.OfSlice(pairs)))
 ```
 
 ### pipe : threading values
 
 **Naming convention** - the suffix tells you the type contract:
 
-| Suffix  | Variant                                  | Type contract                                          | Example                 |
-|---------|------------------------------------------|--------------------------------------------------------|-------------------------|
-| `EndoN` | `PipeEndoN`, `ComposeEndoN`              | variadic, all steps `T => T` (same type, endomorphic)  | string transforms       |
-| `2..8`  | `Pipe2`-`Pipe8`, `Compose2`-`Compose4`   | fixed-arity, each step may change type (`A => B => C`) | parse + validate + save |
+| Suffix  | Variant                                | Type contract                                          | Example                 |
+|---------|----------------------------------------|--------------------------------------------------------|-------------------------|
+| `EndoN` | `PipeEndoN`, `ComposeEndoN`            | variadic, all steps `T => T` (same type, endomorphic)  | string transforms       |
+| `2..8`  | `Pipe2`-`Pipe8`, `Compose2`-`Compose4` | fixed-arity, each step may change type (`A => B => C`) | parse + validate + save |
 
 The compiler enforces this: `PipeEndoN` simply cannot accept a function whose output
 type differs from its input. `Pipe2`-`Pipe8` each declare distinct type params
@@ -285,28 +379,28 @@ type differs from its input. `Pipe2`-`Pipe8` each declare distinct type params
 ```go
 // Same-type chain (T => T): use PipeEndoN - unlimited steps, all string => string
 processed := pipe.PipeEndoN(
-    rawInput,
-    strings.TrimSpace,
-    strings.ToLower,
-    strings.Title,
-    sanitize,
+rawInput,
+strings.TrimSpace,
+strings.ToLower,
+strings.Title,
+sanitize,
 )
 
 // Type-changing chain: use Pipe2-Pipe8
 validated := pipe.Pipe3(
-    rawInput,            // string
-    strings.TrimSpace,   // string => string
-    parse,               // string => int
-    validate,            // int    => error
+rawInput,          // string
+strings.TrimSpace, // string => string
+parse,             // string => int
+validate,          // int    => error
 )
 
 // Tap: side-effect (logging, metrics) without changing the value
 result := pipe.Pipe4(
-    rawInput,
-    strings.TrimSpace,
-    pipe.Tap(func(s string) { log.Println("trimmed:", s) }),
-    strings.ToUpper,
-    validate,
+rawInput,
+strings.TrimSpace,
+pipe.Tap(func (s string) { log.Println("trimmed:", s) }),
+strings.ToUpper,
+validate,
 )
 ```
 
@@ -316,15 +410,15 @@ Use `ComposeEndoN`/`Compose2`-`Compose4` to collapse multiple steps into one slo
 
 ```go
 pipe.Pipe5(
-    seq.OfSlice(people),
-    seq.FilterFn(adult),                          // Seq[Person] => Seq[Person]
-    seq.MapFn(getName),                           // Seq[Person] => Seq[string]
-    seq.DistinctFn[string](),                     // Seq[string] => Seq[string]
-    pipe.ComposeEndoN(                                // group same-type steps into one slot
-        seq.SortWithFn[string](cmp.Compare),
-        seq.TruncateFn[string](3),
-    ),
-    seq.ToSliceFn[string](),                      // Seq[string] => []string
+seq.OfSlice(people),
+seq.FilterFn(adult), // Seq[Person] => Seq[Person]
+seq.MapFn(getName), // Seq[Person] => Seq[string]
+seq.DistinctFn[string](), // Seq[string] => Seq[string]
+pipe.ComposeEndoN(        // group same-type steps into one slot
+seq.SortWithFn[string](cmp.Compare),
+seq.TruncateFn[string](3),
+),
+seq.ToSliceFn[string](), // Seq[string] => []string
 )
 ```
 
@@ -417,11 +511,11 @@ Benchmarks on `[]int` pipelines (Intel Core Ultra 7, 8 cores):
 
 #### Lightweight workload (`n*3+1` — exposes overhead)
 
-| Operation      | `seq` (sequential) |  `pseq` (chunked) | `lo/parallel` (per-element) | pseq vs lo         |
-|----------------|-------------------:|------------------:|----------------------------:|--------------------|
-| **Map 1k**     |           **6 µs** |             25 µs |                      316 µs | **12.7× faster**   |
-| **Map 10k**    |         **122 µs** |            357 µs |                    3,473 µs | **9.7× faster**    |
-| **Map 100k**   |       **1,427 µs** |          3,635 µs |                   34,398 µs | **9.5× faster**    |
+| Operation    | `seq` (sequential) | `pseq` (chunked) | `lo/parallel` (per-element) | pseq vs lo       |
+|--------------|-------------------:|-----------------:|----------------------------:|------------------|
+| **Map 1k**   |           **6 µs** |            25 µs |                      316 µs | **12.7× faster** |
+| **Map 10k**  |         **122 µs** |           357 µs |                    3,473 µs | **9.7× faster**  |
+| **Map 100k** |       **1,427 µs** |         3,635 µs |                   34,398 µs | **9.5× faster**  |
 
 #### Memory (10k Map)
 
@@ -457,6 +551,7 @@ pipe       =>  (none)
 option     =>  (none)
 result     =>  option
 validation =>  option, result
-seq        =>  option
+seq        =>  option, result
 pseq       =>  seq, option
+kv         =>  seq
 ```
