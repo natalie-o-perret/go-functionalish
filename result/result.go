@@ -3,7 +3,7 @@
 // enabling railway-oriented error handling without explicit nil checks.
 package result
 
-import "github.com/natalie-o-perret/go-functional-ish/option"
+import "github.com/natalie-o-perret/go-functionalish/option"
 
 // Result[T, E] holds either a successful value of type T or an error of type E.
 type Result[T, E any] struct {

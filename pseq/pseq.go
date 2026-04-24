@@ -1,5 +1,5 @@
 // Package pseq provides parallel counterparts to the most parallelism-friendly
-// operations from [github.com/natalie-o-perret/go-functional-ish/seq].
+// operations from [github.com/natalie-o-perret/go-functionalish/seq].
 //
 // Inspired by F#'s [FSharp.Collections.ParallelSeq] (PSeq) and Go's [lo/parallel].
 //
@@ -37,8 +37,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/natalie-o-perret/go-functional-ish/option"
-	"github.com/natalie-o-perret/go-functional-ish/seq"
+	"github.com/natalie-o-perret/go-functionalish/option"
+	"github.com/natalie-o-perret/go-functionalish/seq"
 )
 
 // ---------------------------------------------------------------------------

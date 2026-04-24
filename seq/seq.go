@@ -13,7 +13,7 @@ import (
 	"iter"
 	"slices"
 
-	"github.com/natalie-o-perret/go-functional-ish/option"
+	"github.com/natalie-o-perret/go-functionalish/option"
 )
 
 // Seq[T] is a lazy sequence. It is a named type over iter.Seq[T] so that

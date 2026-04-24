@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/natalie-o-perret/go-functional-ish/option"
-	"github.com/natalie-o-perret/go-functional-ish/result"
-	"github.com/natalie-o-perret/go-functional-ish/validation"
+	"github.com/natalie-o-perret/go-functionalish/option"
+	"github.com/natalie-o-perret/go-functionalish/result"
+	"github.com/natalie-o-perret/go-functionalish/validation"
 )
 
 // -- helpers ------------------------------------------------------------------

@@ -4,8 +4,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/natalie-o-perret/go-functional-ish/pseq"
-	"github.com/natalie-o-perret/go-functional-ish/seq"
+	"github.com/natalie-o-perret/go-functionalish/pseq"
+	"github.com/natalie-o-perret/go-functionalish/seq"
 )
 
 // sink prevents dead-code elimination in benchmarks.
