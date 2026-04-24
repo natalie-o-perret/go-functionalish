@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/natalie-o-perret/gof/option"
-	"github.com/natalie-o-perret/gof/result"
+	"github.com/natalie-o-perret/go-functional-ish/option"
+	"github.com/natalie-o-perret/go-functional-ish/result"
 )
 
 func TestOk(t *testing.T) {

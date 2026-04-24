@@ -1,7 +1,7 @@
-# gof: Go Functional
+# go-functional-ish
 
-[![CI](https://github.com/natalie-o-perret/gof/actions/workflows/ci.yml/badge.svg)](https://github.com/natalie-o-perret/gof/actions/workflows/ci.yml)
-[![Go Reference](https://pkg.go.dev/badge/github.com/natalie-o-perret/gof.svg)](https://pkg.go.dev/github.com/natalie-o-perret/gof)
+[![CI](https://github.com/natalie-o-perret/go-functional-ish/actions/workflows/ci.yml/badge.svg)](https://github.com/natalie-o-perret/go-functional-ish/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/natalie-o-perret/go-functional-ish.svg)](https://pkg.go.dev/github.com/natalie-o-perret/go-functional-ish)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Contributing](https://img.shields.io/badge/contributing-guide-blue)](CONTRIBUTING.md)
 
@@ -32,12 +32,12 @@ No reflection. No `interface{}`. Pure generics and lazy by default.
 
 ```go
 import (
-    "github.com/natalie-o-perret/gof/seq"
-    "github.com/natalie-o-perret/gof/pseq"
-    "github.com/natalie-o-perret/gof/option"
-    "github.com/natalie-o-perret/gof/result"
-    "github.com/natalie-o-perret/gof/validation"
-    "github.com/natalie-o-perret/gof/pipe"
+    "github.com/natalie-o-perret/go-functional-ish/seq"
+    "github.com/natalie-o-perret/go-functional-ish/pseq"
+    "github.com/natalie-o-perret/go-functional-ish/option"
+    "github.com/natalie-o-perret/go-functional-ish/result"
+    "github.com/natalie-o-perret/go-functional-ish/validation"
+    "github.com/natalie-o-perret/go-functional-ish/pipe"
 )
 ```
 

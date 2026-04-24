@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/natalie-o-perret/gof/option"
-	"github.com/natalie-o-perret/gof/seq"
+	"github.com/natalie-o-perret/go-functional-ish/option"
+	"github.com/natalie-o-perret/go-functional-ish/seq"
 )
 
 func assertSlice[T comparable](t *testing.T, got, want []T) {
