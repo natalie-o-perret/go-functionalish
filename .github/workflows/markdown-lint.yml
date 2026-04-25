@@ -2,11 +2,11 @@ name: markdown-lint
 
 on:
   push:
-    branches: [main]
-    paths: ["**/*.md", ".markdownlint.jsonc"]
+    branches: [ main ]
+    paths: [ "**/*.md", ".markdownlint.jsonc" ]
   pull_request:
-    branches: [main]
-    paths: ["**/*.md", ".markdownlint.jsonc"]
+    branches: [ main ]
+    paths: [ "**/*.md", ".markdownlint.jsonc" ]
 
 jobs:
   lint-markdown:

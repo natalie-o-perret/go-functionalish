@@ -763,15 +763,15 @@ func TestSequence(t *testing.T) {
 func TestTraverse(t *testing.T) {
 	items := []string{"1", "2", "3"}
 	got := result.Traverse(items, func(s string) result.Result[int, string] {
-if s == "bad" {
-return result.Err[int, string]("bad input")
-}
-n := 0
-for _, c := range s {
-n = n*10 + int(c-'0')
-}
-return result.Ok[int, string](n)
-})
+		if s == "bad" {
+			return result.Err[int, string]("bad input")
+		}
+		n := 0
+		for _, c := range s {
+			n = n*10 + int(c-'0')
+		}
+		return result.Ok[int, string](n)
+	})
 	if !got.IsOk() {
 		t.Fatalf("expected Ok, got %s", got.UnwrapErr())
 	}
@@ -781,11 +781,11 @@ return result.Ok[int, string](n)
 	}
 	items2 := []string{"1", "bad", "3"}
 	got2 := result.Traverse(items2, func(s string) result.Result[int, string] {
-if s == "bad" {
-return result.Err[int, string]("bad input")
-}
-return result.Ok[int, string](0)
-})
+		if s == "bad" {
+			return result.Err[int, string]("bad input")
+		}
+		return result.Ok[int, string](0)
+	})
 	if got2.IsOk() || got2.UnwrapErr() != "bad input" {
 		t.Fatal("expected Err(bad input)")
 	}

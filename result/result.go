@@ -194,4 +194,3 @@ func Traverse[T, R, E any](items []T, fn func(T) Result[R, E]) Result[[]R, E] {
 	}
 	return Ok[[]R, E](values)
 }
-

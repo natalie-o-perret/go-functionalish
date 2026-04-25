@@ -4,12 +4,16 @@
 // The central type is [Seq2], a named alias over iter.Seq2[K,V] that supports
 // lazy map, filter, fold and conversion to/from Go maps and [seq.Seq] pairs.
 package kv
+
 import (
-"iter"
-"github.com/natalie-o-perret/go-functionalish/seq"
+	"iter"
+
+	"github.com/natalie-o-perret/go-functionalish/seq"
 )
+
 // Seq2[K,V] is a lazy key-value sequence, a named type over iter.Seq2[K,V].
 type Seq2[K, V any] iter.Seq2[K, V]
+
 // Of wraps a Go map into a Seq2. Iteration order is not guaranteed.
 func Of[K comparable, V any](m map[K]V) Seq2[K, V] {
 	return func(yield func(K, V) bool) {
@@ -20,6 +24,7 @@ func Of[K comparable, V any](m map[K]V) Seq2[K, V] {
 		}
 	}
 }
+
 // Keys returns a seq.Seq of all keys from s.
 func Keys[K, V any](s Seq2[K, V]) seq.Seq[K] {
 	return func(yield func(K) bool) {
@@ -30,6 +35,7 @@ func Keys[K, V any](s Seq2[K, V]) seq.Seq[K] {
 		}
 	}
 }
+
 // Values returns a seq.Seq of all values from s.
 func Values[K, V any](s Seq2[K, V]) seq.Seq[V] {
 	return func(yield func(V) bool) {
@@ -40,6 +46,7 @@ func Values[K, V any](s Seq2[K, V]) seq.Seq[V] {
 		}
 	}
 }
+
 // ToSeq converts a Seq2 into a seq.Seq of seq.Pair[K,V].
 func ToSeq[K, V any](s Seq2[K, V]) seq.Seq[seq.Pair[K, V]] {
 	return func(yield func(seq.Pair[K, V]) bool) {
@@ -50,6 +57,7 @@ func ToSeq[K, V any](s Seq2[K, V]) seq.Seq[seq.Pair[K, V]] {
 		}
 	}
 }
+
 // FromSeq converts a seq.Seq of seq.Pair[K,V] into a Seq2.
 func FromSeq[K, V any](s seq.Seq[seq.Pair[K, V]]) Seq2[K, V] {
 	return func(yield func(K, V) bool) {
@@ -60,6 +68,7 @@ func FromSeq[K, V any](s seq.Seq[seq.Pair[K, V]]) Seq2[K, V] {
 		}
 	}
 }
+
 // MapValues transforms values lazily, keeping keys unchanged.
 func MapValues[K, V, R any](s Seq2[K, V], fn func(V) R) Seq2[K, R] {
 	return func(yield func(K, R) bool) {
@@ -70,6 +79,7 @@ func MapValues[K, V, R any](s Seq2[K, V], fn func(V) R) Seq2[K, R] {
 		}
 	}
 }
+
 // MapKeys transforms keys lazily. Duplicate keys in the output are not resolved.
 func MapKeys[K1, K2, V any](s Seq2[K1, V], fn func(K1) K2) Seq2[K2, V] {
 	return func(yield func(K2, V) bool) {
@@ -80,6 +90,7 @@ func MapKeys[K1, K2, V any](s Seq2[K1, V], fn func(K1) K2) Seq2[K2, V] {
 		}
 	}
 }
+
 // Filter yields only pairs for which fn returns true.
 func Filter[K, V any](s Seq2[K, V], fn func(K, V) bool) Seq2[K, V] {
 	return func(yield func(K, V) bool) {
@@ -92,6 +103,7 @@ func Filter[K, V any](s Seq2[K, V], fn func(K, V) bool) Seq2[K, V] {
 		}
 	}
 }
+
 // Fold reduces a Seq2 into a single value using fn, starting from initial.
 func Fold[K, V, A any](s Seq2[K, V], initial A, fn func(A, K, V) A) A {
 	acc := initial
@@ -100,6 +112,7 @@ func Fold[K, V, A any](s Seq2[K, V], initial A, fn func(A, K, V) A) A {
 	}
 	return acc
 }
+
 // Collect materialises a Seq2 into a map. Later pairs overwrite on duplicate keys.
 func Collect[K comparable, V any](s Seq2[K, V]) map[K]V {
 	m := make(map[K]V)
@@ -108,6 +121,7 @@ func Collect[K comparable, V any](s Seq2[K, V]) map[K]V {
 	}
 	return m
 }
+
 // ContainsKey reports whether k appears as a key in s. Short-circuits.
 func ContainsKey[K comparable, V any](s Seq2[K, V], k K) bool {
 	for key, _ := range iter.Seq2[K, V](s) {

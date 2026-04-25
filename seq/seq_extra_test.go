@@ -445,16 +445,19 @@ func TestStepByPanic(t *testing.T) {
 }
 func TestToMap(t *testing.T) {
 	pairs := seq.OfSlice([]seq.Pair[string, int]{
-{First: "a", Second: 1},
-{First: "b", Second: 2},
-})
+		{First: "a", Second: 1},
+		{First: "b", Second: 2},
+	})
 	m := seq.ToMap(pairs)
 	if m["a"] != 1 || m["b"] != 2 || len(m) != 2 {
 		t.Fatalf("got %v", m)
 	}
 }
 func TestToMapBy(t *testing.T) {
-	type kv struct{ k string; v int }
+	type kv struct {
+		k string
+		v int
+	}
 	s := seq.OfSlice([]kv{{"x", 10}, {"y", 20}})
 	m := seq.ToMapBy(s, func(p kv) string { return p.k }, func(p kv) int { return p.v })
 	if m["x"] != 10 || m["y"] != 20 {

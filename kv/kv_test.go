@@ -1,10 +1,13 @@
 package kv_test
+
 import (
-"sort"
-"testing"
-"github.com/natalie-o-perret/go-functionalish/kv"
-"github.com/natalie-o-perret/go-functionalish/seq"
+	"sort"
+	"testing"
+
+	"github.com/natalie-o-perret/go-functionalish/kv"
+	"github.com/natalie-o-perret/go-functionalish/seq"
 )
+
 func TestOf_Collect(t *testing.T) {
 	m := map[string]int{"a": 1, "b": 2, "c": 3}
 	got := kv.Collect(kv.Of(m))

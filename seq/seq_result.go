@@ -10,4 +10,3 @@ func OfResult[T, E any](r result.Result[T, E]) Seq[T] {
 	}
 	return Empty[T]()
 }
-
