@@ -28,7 +28,7 @@ func Of[K comparable, V any](m map[K]V) Seq2[K, V] {
 // Keys returns a seq.Seq of all keys from s.
 func Keys[K, V any](s Seq2[K, V]) seq.Seq[K] {
 	return func(yield func(K) bool) {
-		for k, _ := range iter.Seq2[K, V](s) {
+		for k := range iter.Seq2[K, V](s) {
 			if !yield(k) {
 				return
 			}
@@ -124,7 +124,7 @@ func Collect[K comparable, V any](s Seq2[K, V]) map[K]V {
 
 // ContainsKey reports whether k appears as a key in s. Short-circuits.
 func ContainsKey[K comparable, V any](s Seq2[K, V], k K) bool {
-	for key, _ := range iter.Seq2[K, V](s) {
+	for key := range iter.Seq2[K, V](s) {
 		if key == k {
 			return true
 		}
