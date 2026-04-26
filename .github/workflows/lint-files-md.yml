@@ -1,20 +1,17 @@
-name: markdown-lint
-
+name: lint - files - *.md, *.rst
 on:
   push:
     branches: [ main ]
-    paths: [ "**/*.md", ".markdownlint.jsonc" ]
+    paths: [ "**/*.md", "**/*.rst", ".markdownlint.jsonc" ]
   pull_request:
     branches: [ main ]
-    paths: [ "**/*.md", ".markdownlint.jsonc" ]
-
+    paths: [ "**/*.md", "**/*.rst", ".markdownlint.jsonc" ]
 jobs:
-  lint-markdown:
-    name: lint markdown
+  markdown-lint:
+    name: markdown lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-
       - uses: DavidAnson/markdownlint-cli2-action@v23
         with:
           globs: "**/*.md"

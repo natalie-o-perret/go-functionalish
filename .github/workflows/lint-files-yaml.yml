@@ -1,4 +1,4 @@
-name: yaml-lint
+name: lint - files - *.yml, *.yaml
 on:
   push:
     branches: [ main ]
@@ -7,8 +7,8 @@ on:
     branches: [ main ]
     paths: [ "**/*.yml", "**/*.yaml", ".yamllint.yml" ]
 jobs:
-  lint-yaml:
-    name: lint yaml
+  yaml-lint:
+    name: yaml lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

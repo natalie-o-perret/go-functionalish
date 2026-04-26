@@ -1,11 +1,9 @@
-name: commit-lint
-
+name: lint - commits - conventional
 on:
   pull_request:
     types: [ opened, edited, synchronize, reopened ]
-
 jobs:
-  lint-pr-title:
+  conventional-commit:
     name: conventional commit check
     runs-on: ubuntu-latest
     steps:

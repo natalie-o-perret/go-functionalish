@@ -1,0 +1,36 @@
+name: lint - files - *.go, *.sum
+on:
+  push:
+    branches: [ main ]
+    paths: [ "**/*.go", "go.sum", ".golangci.yml" ]
+  pull_request:
+    branches: [ main ]
+    paths: [ "**/*.go", "go.sum", ".golangci.yml" ]
+jobs:
+  golangci-lint:
+    name: golangci-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.26"
+          cache: true
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+  go-mod-verify:
+    name: go mod verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.26"
+          cache: true
+      - name: verify go.sum
+        run: go mod verify
+      - name: check go mod tidy
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod go.sum
