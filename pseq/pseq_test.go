@@ -125,7 +125,7 @@ func TestMap_MatchesSeqMap(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestFilter_Empty(t *testing.T) {
-	got := pseq.Filter(seq.Empty[int](), func(n int) bool { return true }).ToSlice()
+	got := pseq.Filter(seq.Empty[int](), func(_ int) bool { return true }).ToSlice()
 	if len(got) != 0 {
 		t.Fatalf("expected empty, got %v", got)
 	}
@@ -133,12 +133,12 @@ func TestFilter_Empty(t *testing.T) {
 
 func TestFilter_AllMatch(t *testing.T) {
 	data := ints(10)
-	got := pseq.Filter(seq.OfSlice(data), func(n int) bool { return true }).ToSlice()
+	got := pseq.Filter(seq.OfSlice(data), func(_ int) bool { return true }).ToSlice()
 	assertSliceEqual(t, got, data)
 }
 
 func TestFilter_NoneMatch(t *testing.T) {
-	got := pseq.Filter(seq.OfSlice(ints(10)), func(n int) bool { return false }).ToSlice()
+	got := pseq.Filter(seq.OfSlice(ints(10)), func(_ int) bool { return false }).ToSlice()
 	if len(got) != 0 {
 		t.Fatalf("expected empty, got %v", got)
 	}
@@ -190,9 +190,7 @@ func TestCollect_MatchesSeqCollect(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestChoose_Empty(t *testing.T) {
-	got := pseq.Choose(seq.Empty[int](), func(n int) option.Option[int] {
-		return option.Some(n)
-	}).ToSlice()
+	got := pseq.Choose(seq.Empty[int](), option.Some[int]).ToSlice()
 	if len(got) != 0 {
 		t.Fatalf("expected empty, got %v", got)
 	}
@@ -217,7 +215,7 @@ func TestChoose_OrderPreserved(t *testing.T) {
 
 func TestForEach_Empty(t *testing.T) {
 	called := false
-	pseq.ForEach(seq.Empty[int](), func(n int) { called = true })
+	pseq.ForEach(seq.Empty[int](), func(_ int) { called = true })
 	if called {
 		t.Fatal("fn should not be called for empty seq")
 	}
@@ -226,7 +224,7 @@ func TestForEach_Empty(t *testing.T) {
 func TestForEach_AllElementsVisited(t *testing.T) {
 	data := ints(100)
 	var count atomic.Int64
-	pseq.ForEach(seq.OfSlice(data), func(n int) { count.Add(1) }, pseq.WithWorkers(8))
+	pseq.ForEach(seq.OfSlice(data), func(_ int) { count.Add(1) }, pseq.WithWorkers(8))
 	if count.Load() != 100 {
 		t.Fatalf("expected 100 calls, got %d", count.Load())
 	}
@@ -326,7 +324,7 @@ func TestCountByKey_MatchesSeq(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestPartition_Empty(t *testing.T) {
-	yes, no := pseq.Partition(seq.Empty[int](), func(n int) bool { return true })
+	yes, no := pseq.Partition(seq.Empty[int](), func(_ int) bool { return true })
 	if len(yes) != 0 || len(no) != 0 {
 		t.Fatalf("expected empty, got yes=%v no=%v", yes, no)
 	}
@@ -380,7 +378,7 @@ func TestSumBy_MatchesSeq(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestExists_Empty(t *testing.T) {
-	if pseq.Exists(seq.Empty[int](), func(n int) bool { return true }) {
+	if pseq.Exists(seq.Empty[int](), func(_ int) bool { return true }) {
 		t.Fatal("expected false for empty seq")
 	}
 }
@@ -400,7 +398,7 @@ func TestExists_NotFound(t *testing.T) {
 }
 
 func TestForAll_Empty(t *testing.T) {
-	if !pseq.ForAll(seq.Empty[int](), func(n int) bool { return false }) {
+	if !pseq.ForAll(seq.Empty[int](), func(_ int) bool { return false }) {
 		t.Fatal("expected true for empty seq")
 	}
 }

@@ -651,12 +651,12 @@ func TestFlatten(t *testing.T) {
 }
 func TestOrElse(t *testing.T) {
 	ok := result.Ok[int, string](1)
-	got := result.OrElse(ok, func(e string) result.Result[int, string] { return result.Ok[int, string](99) })
+	got := result.OrElse(ok, func(_ string) result.Result[int, string] { return result.Ok[int, string](99) })
 	if got.Unwrap() != 1 {
 		t.Fatal("expected Ok to win")
 	}
 	err := result.Err[int, string]("oops")
-	got = result.OrElse(err, func(e string) result.Result[int, string] { return result.Ok[int, string](42) })
+	got = result.OrElse(err, func(_ string) result.Result[int, string] { return result.Ok[int, string](42) })
 	if got.Unwrap() != 42 {
 		t.Fatal("expected fallback 42")
 	}
@@ -680,7 +680,7 @@ func TestTeeErr(t *testing.T) {
 	if seen != "bad" {
 		t.Fatal("TeeErr should call fn on Err")
 	}
-	result.TeeErr(result.Ok[int, string](1), func(e string) { seen = "nope" })
+	result.TeeErr(result.Ok[int, string](1), func(_ string) { seen = "nope" })
 	if seen == "nope" {
 		t.Fatal("TeeErr should not call fn on Ok")
 	}

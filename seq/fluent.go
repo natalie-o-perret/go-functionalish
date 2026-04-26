@@ -112,7 +112,7 @@ func SortByDescendingFn[T any, K cmp.Ordered](key func(T) K) func(Seq[T]) Seq[T]
 
 // DistinctFn returns a transform: Seq[T] => Seq[T], removing duplicates.
 func DistinctFn[T comparable]() func(Seq[T]) Seq[T] {
-	return func(s Seq[T]) Seq[T] { return Distinct(s) }
+	return Distinct[T]
 }
 
 // DistinctByFn returns a transform: Seq[T] => Seq[T], removing duplicates by key.
@@ -127,12 +127,12 @@ func ExceptFn[T comparable](exclusion Seq[T]) func(Seq[T]) Seq[T] {
 
 // IndexedFn returns a transform: Seq[T] => Seq[Pair[int, T]].
 func IndexedFn[T any]() func(Seq[T]) Seq[Pair[int, T]] {
-	return func(s Seq[T]) Seq[Pair[int, T]] { return Indexed(s) }
+	return Indexed[T]
 }
 
 // PairwiseFn returns a transform: Seq[T] => Seq[Pair[T, T]].
 func PairwiseFn[T any]() func(Seq[T]) Seq[Pair[T, T]] {
-	return func(s Seq[T]) Seq[Pair[T, T]] { return Pairwise(s) }
+	return Pairwise[T]
 }
 
 // WindowedFn returns a transform: Seq[T] => Seq[[]T].

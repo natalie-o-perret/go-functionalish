@@ -431,7 +431,7 @@ func Contains[T comparable](s Seq[T], value T) bool {
 
 // Except yields elements from s that are not in the exclusion sequence.
 // The exclusion sequence is materialised once.
-func Except[T comparable](s Seq[T], exclusion Seq[T]) Seq[T] {
+func Except[T comparable](s, exclusion Seq[T]) Seq[T] {
 	return func(yield func(T) bool) {
 		set := make(map[T]struct{})
 		for v := range exclusion {

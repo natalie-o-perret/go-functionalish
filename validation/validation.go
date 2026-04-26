@@ -19,7 +19,7 @@ import (
 	"github.com/natalie-o-perret/go-functionalish/result"
 )
 
-// Validation[T, E] holds either a successful value of type T
+// Validation holds either a successful value of type T
 // or a slice of errors of type E. Unlike Result, multiple errors
 // are accumulated when combining validations via Map2-Map5, Apply,
 // Sequence, or Traverse.

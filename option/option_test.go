@@ -87,7 +87,7 @@ func TestMapNone(t *testing.T) {
 
 func TestBind(t *testing.T) {
 	first := func(s string) option.Option[byte] {
-		if len(s) == 0 {
+		if s == "" {
 			return option.None[byte]()
 		}
 		return option.Some(s[0])

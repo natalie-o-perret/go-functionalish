@@ -2,7 +2,7 @@
 // It eliminates nil pointer errors by making the presence or absence of a value explicit.
 package option
 
-// Option[T] represents a value that may or may not be present.
+// Option represents a value that may or may not be present.
 // Use Some to wrap a value, None to represent absence.
 type Option[T any] struct {
 	value T

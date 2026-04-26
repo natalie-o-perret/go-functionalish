@@ -11,7 +11,7 @@ import (
 	"github.com/natalie-o-perret/go-functionalish/seq"
 )
 
-// Seq2[K,V] is a lazy key-value sequence, a named type over iter.Seq2[K,V].
+// Seq2 is a lazy key-value sequence, a named type over iter.Seq2[K,V].
 type Seq2[K, V any] iter.Seq2[K, V]
 
 // Of wraps a Go map into a Seq2. Iteration order is not guaranteed.
