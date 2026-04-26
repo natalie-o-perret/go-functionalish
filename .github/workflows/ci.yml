@@ -30,6 +30,13 @@ jobs:
       - name: test
         run: go test -race -coverprofile=coverage.out ./...
 
+      - name: coverage gate (≥ 80%)
+        if: matrix.go == '1.26'
+        run: |
+          total=$(go tool cover -func=coverage.out | awk '/^total:/ {gsub(/%/,"",$3); print $3}')
+          echo "Total coverage: ${total}%"
+          awk -v t="$total" 'BEGIN { if (t+0 < 80) { print "Coverage " t "% is below 80% threshold"; exit 1 } }'
+
       - name: upload coverage
         if: matrix.go == '1.26'
         uses: actions/upload-artifact@v4

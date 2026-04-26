@@ -14,7 +14,36 @@ linters:
     - misspell
     - unconvert
     - unparam
+    - gocritic
+    - revive
   settings:
     govet:
       enable-all: true
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+      disabled-checks:
+        - hugeParam        # false-positive on generic type params
+        - rangeValCopy     # false-positive on generic type params
+        - unnamedResult    # naming return values is optional in Go
+        - dupSubExpr       # flags intentional duplicate args in tests
+        - dupOption        # flags intentional duplicate args in tests
+    revive:
+      rules:
+        - name: exported
+          arguments: [ "checkPrivateReceivers" ]
+        - name: unused-parameter
+        - name: empty-block
+        - name: superfluous-else
+        - name: unreachable-code
+        - name: redefines-builtin-id
 
+issues:
+  exclude-rules:
+    # PipeEndoN / ComposeEndoN carry the package prefix intentionally
+    # so callers see pipe.PipeEndoN / pipe.ComposeEndoN — not a stutter.
+    - path: "pipe/pipe.go"
+      linters: [ revive ]
+      text: "stutters"
