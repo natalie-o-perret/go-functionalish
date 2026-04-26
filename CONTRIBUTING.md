@@ -5,7 +5,7 @@
 ```sh
 git clone https://github.com/natalie-o-perret/go-functionalish.git
 cd go-functionalish
-make setup   # installs the commit-msg hook
+git config core.hooksPath .githooks   # installs the commit-msg hook
 ```
 
 Requires Go 1.24+ and [golangci-lint](https://golangci-lint.run/welcome/install/).
@@ -13,12 +13,11 @@ Requires Go 1.24+ and [golangci-lint](https://golangci-lint.run/welcome/install/
 ## Workflow
 
 ```sh
-make test      # go test -race ./...
-make lint      # golangci-lint run ./...
-make lint-md   # markdownlint on all .md files
+go test -race ./...          # run tests
+golangci-lint run ./...      # lint Go files
 ```
 
-All three run in CI on every PR. A PR must be green before merging.
+All checks run in CI on every PR. A PR must be green before merging.
 
 ## Commit messages
 
@@ -37,19 +36,6 @@ docs: update README pipeline example
 refactor(result): simplify Bind internals
 ```
 
-The commit-msg hook (installed by `make setup`) enforces this locally. The PR title is also linted in CI.
+The commit-msg hook (installed above) enforces this locally. The PR title is also linted in CI.
 
-`BREAKING CHANGE:` in the commit footer signals a semver major bump to release-please.
-
-## Pull requests
-
-- One logical change per PR.
-- Add or update tests for any behaviour change.
-- No external dependencies - the library intentionally has none.
-
-## Design constraints
-
-- **No reflection, no `interface{}`** - pure generics only.
-- **Type-transforming functions are package-level** (Go methods cannot introduce new type parameters).
-- **`seq` operations are lazy** - wrapping iterators, no materialisation until a terminal is called.
-- **F# naming conventions** - `Bind` not `FlatMap`, `Map` not `Select`, `Some`/`None` not `Just`/`Nothing`.
+`BREAKING CHANGE:` in the commit footer signals a semver major bump.
