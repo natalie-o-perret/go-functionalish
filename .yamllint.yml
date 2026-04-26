@@ -27,4 +27,3 @@ rules:
     spaces: 2
     indent-sequences: true
     check-multi-line-strings: false
-
