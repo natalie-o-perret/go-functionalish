@@ -5,7 +5,6 @@
 ```sh
 git clone https://github.com/natalie-o-perret/go-functionalish.git
 cd go-functionalish
-git config core.hooksPath .githooks   # installs the commit-msg hook
 ```
 
 Requires Go 1.24+ and [golangci-lint](https://golangci-lint.run/welcome/install/).
@@ -36,6 +35,6 @@ docs: update README pipeline example
 refactor(result): simplify Bind internals
 ```
 
-The commit-msg hook (installed above) enforces this locally. The PR title is also linted in CI.
+The PR title is linted in CI.
 
 `BREAKING CHANGE:` in the commit footer signals a semver major bump.
