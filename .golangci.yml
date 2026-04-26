@@ -39,11 +39,10 @@ linters:
         - name: superfluous-else
         - name: unreachable-code
         - name: redefines-builtin-id
-
-issues:
-  exclude-rules:
-    # PipeEndoN / ComposeEndoN carry the package prefix intentionally
-    # so callers see pipe.PipeEndoN / pipe.ComposeEndoN — not a stutter.
-    - path: "pipe/pipe.go"
-      linters: [ revive ]
-      text: "stutters"
+  exclusions:
+    rules:
+      # PipeEndoN / ComposeEndoN carry the package prefix intentionally
+      # so callers see pipe.PipeEndoN / pipe.ComposeEndoN — not a stutter.
+      - path: "pipe/pipe.go"
+        linters: [ revive ]
+        text: "stutters"

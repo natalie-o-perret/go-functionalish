@@ -22,6 +22,12 @@ rules:
   comments:
     min-spaces-from-content: 1
 
+  # GitHub Actions and golangci-lint configs use "[ value ]" flow sequences —
+  # allow up to one space inside brackets
+  brackets:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+
   # 2-space indentation (GitHub Actions standard)
   indentation:
     spaces: 2
