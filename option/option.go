@@ -2,7 +2,7 @@
 // It eliminates nil pointer errors by making the presence or absence of a value explicit.
 package option
 
-// Option[T] represents a value that may or may not be present.
+// Option represents a value that may or may not be present.
 // Use Some to wrap a value, None to represent absence.
 type Option[T any] struct {
 	value T
@@ -124,6 +124,24 @@ func DefaultWith[T any](o Option[T], fn func() T) T {
 		return o.value
 	}
 	return fn()
+}
+
+// Tee calls fn with the value if Some, returning o unchanged.
+// Useful for logging or side effects in a pipeline.
+func Tee[T any](o Option[T], fn func(T)) Option[T] {
+	if o.valid {
+		fn(o.value)
+	}
+	return o
+}
+
+// TeeNone calls fn if None, returning o unchanged.
+// Useful for logging or side effects on the absent path.
+func TeeNone[T any](o Option[T], fn func()) Option[T] {
+	if !o.valid {
+		fn()
+	}
+	return o
 }
 
 // Pair holds two values of potentially different types.

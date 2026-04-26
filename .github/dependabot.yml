@@ -1,5 +1,6 @@
 version: 2
 updates:
+  # Dependabot will also open security PRs automatically (no extra config needed)
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
@@ -7,8 +8,6 @@ updates:
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
-    ignore: []
-    # Dependabot will also open security PRs automatically (no extra config needed)
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -17,4 +16,3 @@ updates:
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
-

@@ -4,7 +4,7 @@ import (
 	"cmp"
 	"testing"
 
-	"github.com/natalie-o-perret/go-functional-ish/seq"
+	"github.com/natalie-o-perret/go-functionalish/seq"
 )
 
 func TestFilter(t *testing.T) {

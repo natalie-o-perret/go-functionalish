@@ -13,10 +13,10 @@ import (
 	"iter"
 	"slices"
 
-	"github.com/natalie-o-perret/go-functional-ish/option"
+	"github.com/natalie-o-perret/go-functionalish/option"
 )
 
-// Seq[T] is a lazy sequence. It is a named type over iter.Seq[T] so that
+// Seq is a lazy sequence (named type over iter.Seq[T]) so that
 // methods can be attached directly without a wrapper struct.
 type Seq[T any] iter.Seq[T]
 
@@ -200,7 +200,7 @@ func (s Seq[T]) Iter(fn func(T)) {
 
 // -- terminal methods ----------------------------------------------------------
 
-// ToSlice materialises the sequence into a slice.
+// ToArray materialises the sequence into a slice.
 //
 // Deprecated: ToArray was renamed to ToSlice for Go idiom accuracy.
 func (s Seq[T]) ToArray() []T { return s.ToSlice() }

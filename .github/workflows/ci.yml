@@ -2,9 +2,9 @@ name: ci
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
   test:
@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ["1.24", "1.26"]
+        go: [ "1.24", "1.26" ]
     steps:
       - uses: actions/checkout@v4
 
@@ -29,6 +29,13 @@ jobs:
 
       - name: test
         run: go test -race -coverprofile=coverage.out ./...
+
+      - name: coverage gate (≥ 80%)
+        if: matrix.go == '1.26'
+        run: |
+          total=$(go tool cover -func=coverage.out | awk '/^total:/ {gsub(/%/,"",$3); print $3}')
+          echo "Total coverage: ${total}%"
+          awk -v t="$total" 'BEGIN { if (t+0 < 80) { print "Coverage " t "% is below 80% threshold"; exit 1 } }'
 
       - name: upload coverage
         if: matrix.go == '1.26'
@@ -68,4 +75,3 @@ jobs:
       - uses: golangci/golangci-lint-action@v7
         with:
           version: latest
-

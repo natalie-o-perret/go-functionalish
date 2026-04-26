@@ -1,4 +1,4 @@
-module github.com/natalie-o-perret/go-functional-ish
+module github.com/natalie-o-perret/go-functionalish
 
 go 1.24
 

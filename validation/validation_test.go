@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/natalie-o-perret/go-functional-ish/option"
-	"github.com/natalie-o-perret/go-functional-ish/result"
-	"github.com/natalie-o-perret/go-functional-ish/validation"
+	"github.com/natalie-o-perret/go-functionalish/option"
+	"github.com/natalie-o-perret/go-functionalish/result"
+	"github.com/natalie-o-perret/go-functionalish/validation"
 )
 
 // -- helpers ------------------------------------------------------------------
@@ -106,7 +106,7 @@ func TestMap(t *testing.T) {
 	})
 	assertSuccess(t, s, "5!")
 
-	f := validation.Map(validation.Failure[int]("err"), func(n int) string {
+	f := validation.Map(validation.Failure[int]("err"), func(_ int) string {
 		return "nope"
 	})
 	assertFailureN(t, f, 1)
@@ -173,7 +173,7 @@ func TestMap2AccumulatesErrors(t *testing.T) {
 	v := validation.Map2(
 		validation.Failure[string]("name required"),
 		validation.Failure[int]("age invalid"),
-		func(name string, age int) string { return "" },
+		func(_ string, _ int) string { return "" },
 	)
 	errs := assertFailureN(t, v, 2)
 	if errs[0] != "name required" || errs[1] != "age invalid" {
@@ -228,7 +228,7 @@ func TestMap5(t *testing.T) {
 		validation.Failure[int]("c"),
 		validation.Failure[int]("d"),
 		validation.Failure[int]("e"),
-		func(a, b, c, d, e int) int { return 0 },
+		func(_, _, _, _, _ int) int { return 0 },
 	)
 	assertFailureN(t, v, 5)
 }

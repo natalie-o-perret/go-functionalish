@@ -2,7 +2,7 @@ name: commit-lint
 
 on:
   pull_request:
-    types: [opened, edited, synchronize, reopened]
+    types: [ opened, edited, synchronize, reopened ]
 
 jobs:
   lint-pr-title:
@@ -30,4 +30,3 @@ jobs:
           subjectPatternError: |
             The subject "{subject}" found in the pull request title "{title}"
             should start with a lowercase letter.
-

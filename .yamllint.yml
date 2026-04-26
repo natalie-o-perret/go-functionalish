@@ -1,0 +1,35 @@
+---
+# yamllint configuration
+# https://yamllint.readthedocs.io/en/stable/rules.html
+extends: default
+
+rules:
+  # GitHub Actions values like "on:" trigger the truthy rule — allow it
+  truthy:
+    allowed-values: [ "true", "false", "on", "off", "yes", "no" ]
+    check-keys: false
+
+  # Long lines are common in workflow files (run: scripts, URLs)
+  line-length:
+    max: 120
+    level: warning
+
+  # Don't require a document-start marker ("---") — we use it ourselves
+  # but don't enforce it on every file
+  document-start: disable
+
+  # Allow comments without a preceding blank line
+  comments:
+    min-spaces-from-content: 1
+
+  # GitHub Actions and golangci-lint configs use "[ value ]" flow sequences —
+  # allow up to one space inside brackets
+  brackets:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+
+  # 2-space indentation (GitHub Actions standard)
+  indentation:
+    spaces: 2
+    indent-sequences: true
+    check-multi-line-strings: false

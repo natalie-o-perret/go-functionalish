@@ -56,6 +56,8 @@ func Pipe8[A, B, C, D, E, F, G, H, I any](v A, f1 func(A) B, f2 func(B) C, f3 fu
 //
 // For pipelines where the type changes between steps, use Pipe2-Pipe8
 // with ComposeEndoN/Compose2-Compose4 to collapse multiple steps into one slot.
+//
+//nolint:revive // PipeEndoN intentionally includes the package prefix for discoverability.
 func PipeEndoN[T any](v T, fns ...func(T) T) T {
 	for _, fn := range fns {
 		v = fn(v)
