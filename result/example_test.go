@@ -19,4 +19,3 @@ func ExampleResult_ToOption() {
 	fmt.Println(doubled.ToOption().UnwrapOr(0))
 	// Output: 84
 }
-

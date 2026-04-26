@@ -26,4 +26,3 @@ func ExampleMap() {
 	fmt.Println(result.UnwrapOr(0))
 	// Output: 42
 }
-

@@ -17,4 +17,3 @@ func ExamplePipe3() {
 	fmt.Println(out)
 	// Output: hello-world
 }
-
