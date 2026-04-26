@@ -1,4 +1,4 @@
-name: lint - files - *.go, *.sum
+name: ci - lint - files - *.go, *.sum
 on:
   push:
     branches: [ main ]

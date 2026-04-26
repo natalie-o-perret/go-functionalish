@@ -1,4 +1,4 @@
-name: lint - commits - conventional
+name: ci - lint - commits - conventional
 on:
   pull_request:
     types: [ opened, edited, synchronize, reopened ]

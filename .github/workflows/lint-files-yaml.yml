@@ -1,4 +1,4 @@
-name: lint - files - *.yml, *.yaml
+name: ci - lint - files - *.yml, *.yaml
 on:
   push:
     branches: [ main ]

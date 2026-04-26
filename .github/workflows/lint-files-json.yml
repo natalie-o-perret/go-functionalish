@@ -1,4 +1,4 @@
-name: lint - files - *.json
+name: ci - lint - files - *.json
 on:
   push:
     branches: [ main ]

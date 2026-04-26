@@ -1,4 +1,4 @@
-name: lint - files - *.md, *.rst
+name: ci - lint - files - *.md, *.rst
 on:
   push:
     branches: [ main ]
