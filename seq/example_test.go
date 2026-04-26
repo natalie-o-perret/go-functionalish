@@ -69,4 +69,3 @@ func ExampleThen() {
 	fmt.Println(owners)
 	// Output: [Bob Charlie Diana Eve]
 }
-
