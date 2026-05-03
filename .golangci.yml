@@ -9,7 +9,6 @@ linters:
     - govet
     - staticcheck
     - unused
-    - deadcode
     - errcheck
     - ineffassign
     - misspell

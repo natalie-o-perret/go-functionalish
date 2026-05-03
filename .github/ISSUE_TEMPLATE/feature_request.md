@@ -43,4 +43,3 @@ pairs := seq.Zip(seq.OfSlice([]int{1, 2}), seq.OfSlice([]string{"a", "b"})).ToSl
 ## Additional context
 
 <!-- Benchmarks, links, screenshots, or anything else. -->
-

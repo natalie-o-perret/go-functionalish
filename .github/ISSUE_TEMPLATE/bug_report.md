@@ -44,4 +44,3 @@ func main() {
 ## Additional context
 
 <!-- Anything else that might be relevant (OS, architecture, benchmark results, etc.) -->
-

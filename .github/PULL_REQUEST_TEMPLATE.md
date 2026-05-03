@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD041 -->
 ## Summary
 
 Tightens the linter setup so dead code and warnings are caught in CI before anything lands on main.
