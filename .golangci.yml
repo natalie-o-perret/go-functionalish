@@ -16,6 +16,8 @@ linters:
     - unparam
     - gocritic
     - revive
+    - nilerr
+    - wastedassign
   settings:
     govet:
       enable-all: true
