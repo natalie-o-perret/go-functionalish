@@ -8,21 +8,8 @@ on:
     types: [ opened, edited, synchronize, reopened ]
 
 jobs:
-  commits:
-    if: github.event_name == 'pull_request'
-    uses: natalie-o-perret/.github/.github/workflows/reusable-lint-commits-conventional.yml@main
+  lint:
+    uses: natalie-o-perret/.github/.github/workflows/reusable-lint.yml@main
     permissions:
       pull-requests: read
-
-  go:
-    uses: natalie-o-perret/.github/.github/workflows/reusable-lint-files-go.yml@main
-
-  json:
-    uses: natalie-o-perret/.github/.github/workflows/reusable-lint-files-json.yml@main
-
-  md:
-    uses: natalie-o-perret/.github/.github/workflows/reusable-lint-files-md.yml@main
-
-  yaml:
-    uses: natalie-o-perret/.github/.github/workflows/reusable-lint-files-yaml.yml@main
 
