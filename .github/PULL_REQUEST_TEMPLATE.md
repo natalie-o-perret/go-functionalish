@@ -1,31 +1,23 @@
 ## Summary
 
-<!-- One-line description of what this PR does.
-     The PR title must follow Conventional Commits:
-       type(scope?): short description
-     Allowed types: feat fix docs style refactor perf test build ci chore revert
-     Example: feat(seq): add Zip and Interleave -->
+Tightens the linter setup so dead code and warnings are caught in CI before anything lands on main.
 
 ## Related issue
 
-<!-- Closes #<issue number> (remove if not applicable) -->
+N/A
 
 ## Changes
 
-<!-- Bullet list of what changed and why. -->
-
-- 
+- Added `deadcode` linter -- finds unreachable top-level declarations that `unused` alone misses
+- Added `nilerr` -- flags the classic "return nil, nil" when the error check is wrong
+- Added `wastedassign` -- catches assignments whose result is never read
+- PR template checklist now has two explicit blocking items for dead code and warnings
 
 ## Checklist
 
-- [ ] Tests added / updated (`go test -race ./...` passes)
-- [ ] Benchmarks added for perf-sensitive changes (`go test ./... -bench=. -benchmem`)
-- [ ] Public API documented with Go doc comments
-- [ ] `golangci-lint run ./...` passes locally
-- [ ] `BREAKING CHANGE:` footer added to commit message if this is a semver major bump
+- [x] No code changes, no tests needed
+- [x] `golangci-lint run ./...` not applicable (config + Markdown only)
 
 ## Notes for reviewers
 
-<!-- Anything the reviewer should pay special attention to, design decisions made,
-     open questions, etc. Delete if not needed. -->
-
+All three new linters are zero-tolerance: any finding is a CI error and blocks merge. If a specific false-positive comes up, add a targeted exclusion in `.golangci.yml` rather than disabling the linter wholesale.

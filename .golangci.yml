@@ -9,6 +9,7 @@ linters:
     - govet
     - staticcheck
     - unused
+    - deadcode
     - errcheck
     - ineffassign
     - misspell
@@ -16,6 +17,8 @@ linters:
     - unparam
     - gocritic
     - revive
+    - nilerr
+    - wastedassign
   settings:
     govet:
       enable-all: true
