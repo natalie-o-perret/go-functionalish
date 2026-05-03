@@ -7,56 +7,9 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
-    name: test (${{ matrix.go }})
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go: [ "1.24", "1.26" ]
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-go@v6
-        with:
-          go-version: ${{ matrix.go }}
-          cache: true
-
-      - name: download deps
-        run: go mod download
-
-      - name: vet
-        run: go vet ./...
-
-      - name: test
-        run: go test -race -coverprofile=coverage.out ./...
-
-      - name: coverage gate (≥ 80%)
-        if: matrix.go == '1.26'
-        run: |
-          total=$(go tool cover -func=coverage.out | awk '/^total:/ {gsub(/%/,"",$3); print $3}')
-          echo "Total coverage: ${total}%"
-          awk -v t="$total" 'BEGIN { if (t+0 < 80) { print "Coverage " t "% is below 80% threshold"; exit 1 } }'
-
-      - name: upload coverage
-        if: matrix.go == '1.26'
-        uses: actions/upload-artifact@v7
-        with:
-          name: coverage
-          path: coverage.out
-
-  govulncheck:
-    name: govulncheck
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-go@v6
-        with:
-          go-version: "1.26"
-          cache: true
-
-      - name: install govulncheck
-        run: go install golang.org/x/vuln/cmd/govulncheck@latest
-
-      - name: run govulncheck
-        run: govulncheck ./...
+  build-test:
+    uses: natalie-o-perret/.github/.github/workflows/reusable-build-test-go.yml@main
+    with:
+      go-versions: '["1.24","1.26"]'
+      go-version-latest: "1.26"
+      coverage-threshold: 80
