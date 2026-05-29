@@ -57,42 +57,42 @@ func TestT4Unpack(t *testing.T) {
 }
 
 func TestApply(t *testing.T) {
-	got := tuple.Apply(tuple.Of(3, 4), func(a, b int) int { return a + b })
+	got := tuple.Of(3, 4).Apply(func(a, b int) int { return a + b })
 	if got != 7 {
 		t.Fatalf("expected 7, got %d", got)
 	}
 }
 
 func TestApply3(t *testing.T) {
-	got := tuple.Apply3(tuple.Of3(1, 2, 3), func(a, b, c int) int { return a + b + c })
+	got := tuple.Of3(1, 2, 3).Apply(func(a, b, c int) int { return a + b + c })
 	if got != 6 {
 		t.Fatalf("expected 6, got %d", got)
 	}
 }
 
 func TestApply4(t *testing.T) {
-	got := tuple.Apply4(tuple.Of4(1, 2, 3, 4), func(a, b, c, d int) int { return a + b + c + d })
+	got := tuple.Of4(1, 2, 3, 4).Apply(func(a, b, c, d int) int { return a + b + c + d })
 	if got != 10 {
 		t.Fatalf("expected 10, got %d", got)
 	}
 }
 
 func TestMapFirst(t *testing.T) {
-	got := tuple.MapFirst(tuple.Of("hello", 42), strings.ToUpper)
+	got := tuple.Of("hello", 42).MapFirst(strings.ToUpper)
 	if got.First != "HELLO" || got.Second != 42 {
 		t.Fatalf("unexpected: %v", got)
 	}
 }
 
 func TestMapSecond(t *testing.T) {
-	got := tuple.MapSecond(tuple.Of(42, "hello"), strings.ToUpper)
+	got := tuple.Of(42, "hello").MapSecond(strings.ToUpper)
 	if got.First != 42 || got.Second != "HELLO" {
 		t.Fatalf("unexpected: %v", got)
 	}
 }
 
 func TestMap(t *testing.T) {
-	got := tuple.Map(tuple.Of("hello", "world"), strings.ToUpper, strings.ToUpper)
+	got := tuple.Of("hello", "world").Map(strings.ToUpper, strings.ToUpper)
 	if got.First != "HELLO" || got.Second != "WORLD" {
 		t.Fatalf("unexpected: %v", got)
 	}

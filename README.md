@@ -121,9 +121,6 @@ seq.OfOption(option.None[int]()).ToSlice() // => []
 seq.OfResult(result.Ok[int, string](7)).ToSlice()  // => [7]
 seq.OfResult(result.Err[int, string]("e")).ToSlice() // => []
 
-// Intersperse: insert separator between elements
-seq.OfSlice([]int{1, 2, 3}).Intersperse(0).ToSlice() // => [1 0 2 0 3]
-
 // StepBy: yield every n-th element starting from the first
 seq.Range(0, 10).StepBy(3).ToSlice() // => [0 3 6 9]
 
@@ -136,13 +133,10 @@ m := seq.ToMap(seq.OfSlice([]seq.Pair[string, int]{{"a", 1}, {"b", 2}}))
 // => map[a:1 b:2]
 
 byOwner := seq.ToMapBy(seq.OfSlice(cars),
-    func(c Car) string { return c.Owner },
-    func(c Car) int    { return c.Year },
+	func(c Car) string { return c.Owner },
+	func(c Car) int    { return c.Year },
 )
 // => map[Alice:2012 Bob:2016 ...]
-
-// Old package-level forms still work (deprecated, kept for compatibility)
-seq.Map(seq.OfSlice(cars).Filter(fn), func(c Car) string { return c.Owner })
 ```
 
 ### pseq: parallel sequences
@@ -230,19 +224,19 @@ profile := findUser(id).
     Bind(func(u User) option.Option[Profile] { return findProfile(u.ProfileID) })
 
 // DefaultWith: lazy default -- fn is only called when None
-val := option.DefaultWith(none, func() string { return expensiveDefault() })
+val := none.DefaultWith(func() string { return expensiveDefault() })
 
 // Contains: value equality check
 option.Contains(option.Some(42), 42) // => true
 
 // Tee / TeeNone: side-effects without breaking the chain
-opt := option.Tee(option.Some(42), func(v int) { log.Println("got", v) }) // => Some(42)
+opt := option.Some(42).Tee(func(v int) { log.Println("got", v) }) // => Some(42)
 
-// Map2: combine two Options
-option.Map2(option.Some(2), option.Some(3), func(a, b int) int { return a + b }) // => Some(5)
+// ZipWith: combine two Options with a function
+option.Some(2).ZipWith(option.Some(3), func(a, b int) int { return a + b }) // => Some(5)
 
 // OrElse: fallback if None
-resolved := option.OrElse(lookupCache(key), func() option.Option[string] { return lookupDB(key) })
+resolved := lookupCache(key).OrElse(func() option.Option[string] { return lookupDB(key) })
 
 // Flatten: unwrap Option[Option[T]]
 option.Flatten(option.Some(option.Some(42))) // => Some(42)
@@ -251,13 +245,6 @@ option.Flatten(option.Some(option.Some(42))) // => Some(42)
 firstModern := seq.OfSlice(cars).
     Filter(func(c Car) bool { return c.Year >= 2015 }).
     TryHead() // => option.Option[Car]
-
-// Old package-level forms still work (deprecated)
-option.Map(name, strings.ToUpper)
-option.Bind(findUser(id), lookupProfile)
-```
-
-### result: railway-oriented error handling
 
 ```go
 // Wrap Go's (T, error) convention
@@ -274,12 +261,11 @@ r := parseRequest(raw).          // Result[Request, string]
 // r is either Ok(response) or Err from whichever step failed first.
 
 // Tee / TeeErr: side-effects without breaking the chain
-result.Tee(r, func(v Response) { log.Printf("ok: %v", v) })
-result.TeeErr(r, func(e string) { log.Printf("err: %s", e) })
+r.Tee(func(v Response) { log.Printf("ok: %v", v) })
+r.TeeErr(func(e string) { log.Printf("err: %s", e) })
 
 // OrElse: try a fallback on Err
-user := result.OrElse(lookupPrimary(id), func(e error) result.Result[User, error] {
-    return lookupReplica(id)
+user := lookupPrimary(id).OrElse(func(e error) result.Result[User, error] {
 })
 
 // Flatten: unwrap Result[Result[T,E],E]
@@ -290,8 +276,8 @@ result.Flatten(result.Ok[result.Result[int, string], string](result.Ok[int, stri
 result.Zip(result.Ok[int, string](1), result.Ok[string, string]("hi"))
 // => Ok({1, "hi"})
 
-// Map2: combine two Results (short-circuits on first Err)
-result.Map2(result.Ok[int, string](3), result.Ok[int, string](4),
+// ZipWith: combine two Results with a function (short-circuits on first Err)
+result.Ok[int, string](3).ZipWith(result.Ok[int, string](4),
     func(a, b int) int { return a + b }) // => Ok(7)
 
 // Sequence: []Result => Result[[]T] (short-circuits on first Err)
@@ -309,11 +295,6 @@ result.Traverse([]string{"1", "2", "3"}, func(s string) result.Result[int, strin
 // Interop with option
 opt := res.ToOption() // Ok => Some, Err => None
 res2 := result.FromOption(opt, errors.New("not found"))
-
-// Old package-level forms still work (deprecated)
-result.Map(r, normalize)
-result.Bind(r, save)
-result.MapErr(r, wrapErr)
 ```
 
 ### slice: eager in-memory sequences
@@ -393,10 +374,6 @@ tuple.New2("hello", []int{1, 2, 3}).
 
 // Unpack into individual variables
 name, age := t.Unpack()
-
-// Old package-level forms still work (deprecated)
-tuple.Apply(t, fn)
-tuple.MapFirst(t, fn)
 ```
 
 ### kv: key-value pipelines
