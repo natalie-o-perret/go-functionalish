@@ -64,7 +64,7 @@ owners := seq.OfSlice(cars).
     ToSlice()
 // => ["Bob", "Charlie", "Diana"]
 
-// Sort, group, distinct — all chainable
+// Sort, group, distinct -- all chainable
 byCar := seq.OfSlice(cars).GroupBy(func(c Car) string { return c.Model })
 
 unique := seq.OfSlice(cars).
@@ -229,7 +229,7 @@ none.UnwrapOr("anonymous") // => "anonymous"
 profile := findUser(id).
     Bind(func(u User) option.Option[Profile] { return findProfile(u.ProfileID) })
 
-// DefaultWith: lazy default — fn is only called when None
+// DefaultWith: lazy default -- fn is only called when None
 val := option.DefaultWith(none, func() string { return expensiveDefault() })
 
 // Contains: value equality check
@@ -263,7 +263,7 @@ option.Bind(findUser(id), lookupProfile)
 // Wrap Go's (T, error) convention
 res := result.Try(func() (User, error) { return db.FindUser(id) })
 
-// Railway pipeline — Map and Bind are now methods (Go 1.27 generic methods).
+// Railway pipeline -- Map and Bind are now methods (Go 1.27 generic methods).
 // Once on the error track, every subsequent step is skipped.
 r := parseRequest(raw).          // Result[Request, string]
     Bind(authenticate).           // step 2: may fail
@@ -332,14 +332,14 @@ users := goslice.Of(
     User{"carol", true, 70}, User{"dave", true, 85},
 )
 
-// Fully fluent — type-changing methods chain left-to-right
+// Fully fluent -- type-changing methods chain left-to-right
 names := users.
     Filter(func(u User) bool { return u.Active }).
     SortByDescending(func(u User) int { return u.Score }).
     Map(func(u User) string { return u.Name })
 // => Slice["dave", "alice", "carol"]
 
-// GroupBy, Choose, Fold — all methods
+// GroupBy, Choose, Fold -- all methods
 byActive := users.GroupBy(func(u User) bool { return u.Active })
 // => map[true:[...] false:[...]]
 
@@ -449,8 +449,8 @@ back  := kv.Collect(kv.FromSeq(seq.OfSlice(pairs)))
 
 Go 1.27 ([#77273](https://github.com/golang/go/issues/77273)) lifted the
 restriction that methods cannot introduce new type parameters. Operations that
-transform the element type — `Map`, `Collect`, `Choose`, `Fold`, `GroupBy`,
-`SortBy`, etc. — are now **methods**, enabling fully left-to-right pipelines:
+transform the element type (`Map`, `Collect`, `Choose`, `Fold`, `GroupBy`,
+`SortBy`, etc.) are now **methods**, enabling fully left-to-right pipelines:
 
 ```go
 // Before Go 1.27: inside-out function calls
@@ -461,7 +461,7 @@ seq.OfSlice(cars).Filter(isActive).Map(toName).SortBy(strings.ToLower).ToSlice()
 ```
 
 The old package-level forms (`seq.Map`, `option.Bind`, etc.) are still present
-and compile — they delegate to the methods and carry a `Deprecated` doc comment
+and compile; they delegate to the methods and carry a `Deprecated` doc comment
 pointing to the method form. Existing code needs no changes.
 
 One exception: `Zip` on `Seq[T]` and `Slice[T]` cannot be a method because
@@ -470,7 +470,7 @@ checker. It stays a package-level function and is not deprecated.
 
 ### Lazy (`seq`) vs eager (`slice`)
 
-`Seq[T]` is a `func(yield func(T) bool)` — a lazy pull iterator. Every
+`Seq[T]` is a `func(yield func(T) bool)`, a lazy pull iterator. Every
 pipeline operation wraps the previous iterator; **nothing runs** until a terminal
 (`ToSlice`, `Head`, `Length`, ...) is called. Only operations that require the
 full sequence (`SortWith`, `SortBy`, `Rev`) must materialise early.
@@ -518,7 +518,7 @@ this is noise: choose whichever style reads better.
 
 ### pseq vs lo/parallel
 
-[lo/parallel](https://github.com/samber/lo) spawns **one goroutine per element** —
+[lo/parallel](https://github.com/samber/lo) spawns **one goroutine per element**,
 simple, but O(n) scheduling overhead. `pseq` partitions into `GOMAXPROCS` chunks
 and runs **one goroutine per chunk** (the same strategy as .NET's PLINQ / F#'s `PSeq`).
 
@@ -531,8 +531,8 @@ Benchmarks on `[]int` pipelines (Intel Core Ultra 7, 8 cores):
 | **Map 1k**      |           1,968 µs |       **717 µs** |                      724 µs | ≈ tied           |
 | **Map 10k**     |          19,243 µs |     **5,509 µs** |                    6,815 µs | **1.24× faster** |
 | **Map 100k**    |         192,687 µs |    **44,555 µs** |                   57,882 µs | **1.30× faster** |
-| **ForEach 10k** |                  — |       **328 µs** |                    2,904 µs | **8.9× faster**  |
-| **GroupBy 10k** |                  — |     **4,587 µs** |                    5,170 µs | **1.13× faster** |
+| **ForEach 10k** |                N/A |       **328 µs** |                    2,904 µs | **8.9× faster**  |
+| **GroupBy 10k** |                N/A |     **4,587 µs** |                    5,170 µs | **1.13× faster** |
 
 #### Lightweight workload (`n*3+1` - exposes overhead)
 
