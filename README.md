@@ -29,7 +29,7 @@ fluent pipelines via Go 1.27 generic methods.
 | `result`     | `Result[T,E]`: railway-oriented error handling                         |
 | `tuple`      | `T2 / T3 / T4`: typed tuples with fluent `Apply`, `MapFirst`, `Map`... |
 | `validation` | `Validation[T,E]`: applicative error accumulation                      |
-| `pipe`       | `Pipe2`...`Pipe8`: F#-style `|>` operator equivalent                   |
+| `pipe`       | `Pipe2`...`Pipe8`: F#-style `\|>` operator equivalent                  |
 | `kv`         | Lazy `Seq2[K,V]`: functional pipelines over `iter.Seq2` / maps         |
 
 ## Quick start
