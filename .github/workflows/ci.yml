@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: [ "1.24", "1.26" ]
+        go: [ "1.27" ]
     steps:
       - uses: actions/checkout@v6
 
@@ -31,14 +31,14 @@ jobs:
         run: go test -race -coverprofile=coverage.out ./...
 
       - name: coverage gate (≥ 80%)
-        if: matrix.go == '1.26'
+        if: matrix.go == '1.27'
         run: |
           total=$(go tool cover -func=coverage.out | awk '/^total:/ {gsub(/%/,"",$3); print $3}')
           echo "Total coverage: ${total}%"
           awk -v t="$total" 'BEGIN { if (t+0 < 80) { print "Coverage " t "% is below 80% threshold"; exit 1 } }'
 
       - name: upload coverage
-        if: matrix.go == '1.26'
+        if: matrix.go == '1.27'
         uses: actions/upload-artifact@v7
         with:
           name: coverage
@@ -52,7 +52,7 @@ jobs:
 
       - uses: actions/setup-go@v6
         with:
-          go-version: "1.26"
+          go-version: "1.27"
           cache: true
 
       - name: install govulncheck

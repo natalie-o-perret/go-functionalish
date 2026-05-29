@@ -61,11 +61,10 @@ func (o Option[T]) ToSlice() []T {
 	return []T{}
 }
 
-// -- type-transforming package-level functions ---------------------------------
-// These must be package-level because Go methods cannot introduce new type parameters.
+// -- type-transforming methods -------------------------------------------------
 
 // Map applies fn to the value inside Some, returning None unchanged.
-func Map[T, R any](o Option[T], fn func(T) R) Option[R] {
+func (o Option[T]) Map[R any](fn func(T) R) Option[R] {
 	if o.valid {
 		return Some(fn(o.value))
 	}
@@ -73,14 +72,33 @@ func Map[T, R any](o Option[T], fn func(T) R) Option[R] {
 }
 
 // Bind applies fn to the value inside Some, flattening the resulting Option.
-func Bind[T, R any](o Option[T], fn func(T) Option[R]) Option[R] {
+func (o Option[T]) Bind[R any](fn func(T) Option[R]) Option[R] {
 	if o.valid {
 		return fn(o.value)
 	}
 	return None[R]()
 }
 
+// -- type-transforming package-level functions ---------------------------------
+// Kept for backward compatibility. Prefer the method forms: o.Map(fn), o.Bind(fn).
+
+// Map applies fn to the value inside Some, returning None unchanged.
+//
+// Deprecated: use o.Map(fn) for a fluent, chainable style.
+func Map[T, R any](o Option[T], fn func(T) R) Option[R] {
+	return o.Map(fn)
+}
+
+// Bind applies fn to the value inside Some, flattening the resulting Option.
+//
+// Deprecated: use o.Bind(fn) for a fluent, chainable style.
+func Bind[T, R any](o Option[T], fn func(T) Option[R]) Option[R] {
+	return o.Bind(fn)
+}
+
 // Zip combines two Options into an Option of a pair. None if either is None.
+// Note: Zip cannot be a method because returning Option[Pair[T,U]] would create
+// an instantiation cycle in the type checker.
 func Zip[T, U any](a Option[T], b Option[U]) Option[Pair[T, U]] {
 	if a.valid && b.valid {
 		return Some(Pair[T, U]{First: a.value, Second: b.value})

@@ -73,10 +73,10 @@ func (r Result[T, E]) ToOption() option.Option[T] {
 	return option.None[T]()
 }
 
-// -- type-transforming package-level functions ---------------------------------
+// -- type-transforming methods -------------------------------------------------
 
 // Map applies fn to the Ok value, passing Err unchanged.
-func Map[T, U, E any](r Result[T, E], fn func(T) U) Result[U, E] {
+func (r Result[T, E]) Map[U any](fn func(T) U) Result[U, E] {
 	if r.ok {
 		return Ok[U, E](fn(r.value))
 	}
@@ -84,7 +84,7 @@ func Map[T, U, E any](r Result[T, E], fn func(T) U) Result[U, E] {
 }
 
 // MapErr applies fn to the Err value, passing Ok unchanged.
-func MapErr[T, E, F any](r Result[T, E], fn func(E) F) Result[T, F] {
+func (r Result[T, E]) MapErr[F any](fn func(E) F) Result[T, F] {
 	if !r.ok {
 		return Err[T, F](fn(r.err))
 	}
@@ -92,11 +92,35 @@ func MapErr[T, E, F any](r Result[T, E], fn func(E) F) Result[T, F] {
 }
 
 // Bind applies fn to the Ok value, flattening the resulting Result.
-func Bind[T, U, E any](r Result[T, E], fn func(T) Result[U, E]) Result[U, E] {
+func (r Result[T, E]) Bind[U any](fn func(T) Result[U, E]) Result[U, E] {
 	if r.ok {
 		return fn(r.value)
 	}
 	return Err[U, E](r.err)
+}
+
+// -- type-transforming package-level functions ---------------------------------
+// Kept for backward compatibility. Prefer the method forms: r.Map(fn), r.Bind(fn), r.MapErr(fn).
+
+// Map applies fn to the Ok value, passing Err unchanged.
+//
+// Deprecated: use r.Map(fn) for a fluent, chainable style.
+func Map[T, U, E any](r Result[T, E], fn func(T) U) Result[U, E] {
+	return r.Map(fn)
+}
+
+// MapErr applies fn to the Err value, passing Ok unchanged.
+//
+// Deprecated: use r.MapErr(fn) for a fluent, chainable style.
+func MapErr[T, E, F any](r Result[T, E], fn func(E) F) Result[T, F] {
+	return r.MapErr(fn)
+}
+
+// Bind applies fn to the Ok value, flattening the resulting Result.
+//
+// Deprecated: use r.Bind(fn) for a fluent, chainable style.
+func Bind[T, U, E any](r Result[T, E], fn func(T) Result[U, E]) Result[U, E] {
+	return r.Bind(fn)
 }
 
 // FromOption converts Some to Ok and None to Err using the provided error.
