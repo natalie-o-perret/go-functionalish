@@ -40,10 +40,10 @@ jobs:
         with:
           version: latest
           install-mode: goinstall
-          # staticcheck is excluded here because it exhausts the 7 GB runner RAM when
-          # running alongside a gotip toolchain built from source. Re-enable once Go 1.27
-          # ships a stable release and golangci-lint pre-built binaries support it.
-          args: --concurrency=1 --disable=staticcheck
+          # staticcheck and unparam are excluded here because they rely on golang.org/x/tools/go/ssa
+          # which panics on Go 1.27 generic methods (typesinternal.ForEachElement + iter.go).
+          # Re-enable once x/tools supports Go 1.27's type iterator API.
+          args: --concurrency=1 --disable=staticcheck,unparam
   go-mod-verify:
     name: go mod verify
     runs-on: ubuntu-latest

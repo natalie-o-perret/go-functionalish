@@ -347,7 +347,7 @@ func TestTryPick(t *testing.T) {
 	if got.Unwrap() != "!!!" {
 		t.Fatalf("TryPick: got %v", got)
 	}
-	none := goslice.Of(1, 2).TryPick(func(n int) option.Option[int] { return option.None[int]() })
+	none := goslice.Of(1, 2).TryPick(func(_ int) option.Option[int] { return option.None[int]() })
 	if none.IsSome() {
 		t.Fatal("TryPick none")
 	}
