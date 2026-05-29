@@ -15,7 +15,6 @@ import (
 	"slices"
 
 	"github.com/natalie-o-perret/go-functionalish/option"
-	"github.com/natalie-o-perret/go-functionalish/seq"
 )
 
 // Slice is a named type over []T so that methods (including generic ones) can
@@ -283,9 +282,6 @@ func (s Slice[T]) Reduce(fn func(T, T) T) (T, bool) {
 // ToSlice returns the underlying []T.
 func (s Slice[T]) ToSlice() []T { return []T(s) }
 
-// ToSeq returns the slice as a lazy seq.Seq[T].
-func (s Slice[T]) ToSeq() seq.Seq[T] { return seq.OfSlice([]T(s)) }
-
 // -- generic methods (Go 1.27+) -----------------------------------------------
 
 // Map returns a new Slice with each element transformed by fn.
@@ -344,9 +340,9 @@ func (s Slice[T]) FoldBack[A any](initial A, fn func(T, A) A) A {
 	return acc
 }
 
-// GroupBy groups elements by the key produced by key, returning a map of Slices.
-func (s Slice[T]) GroupBy[K comparable](key func(T) K) map[K]Slice[T] {
-	m := make(map[K]Slice[T])
+// GroupBy groups elements by the key produced by key.
+func (s Slice[T]) GroupBy[K comparable](key func(T) K) map[K][]T {
+	m := make(map[K][]T)
 	for _, v := range s {
 		k := key(v)
 		m[k] = append(m[k], v)
@@ -427,16 +423,15 @@ func (s Slice[T]) MapFold[S, R any](initial S, fn func(S, T) (R, S)) (Slice[R], 
 
 // -- package-level functions (constraints prevent methods) ----------------------
 
-// Zip pairs corresponding elements from a and b into seq.Pairs. Stops at the
-// shorter slice.
+// Zip pairs corresponding elements from a and b. Stops at the shorter slice.
 //
-// Note: Zip cannot be a method because returning Slice[seq.Pair[T,U]] from a
+// Note: Zip cannot be a method because returning Slice[option.Pair[T,U]] from a
 // Slice[T] method creates an instantiation cycle in the Go 1.27 type checker.
-func Zip[T, U any](a Slice[T], b Slice[U]) Slice[seq.Pair[T, U]] {
+func Zip[T, U any](a Slice[T], b Slice[U]) Slice[option.Pair[T, U]] {
 	n := min(len(a), len(b))
-	out := make(Slice[seq.Pair[T, U]], n)
+	out := make(Slice[option.Pair[T, U]], n)
 	for i := range n {
-		out[i] = seq.Pair[T, U]{First: a[i], Second: b[i]}
+		out[i] = option.Pair[T, U]{First: a[i], Second: b[i]}
 	}
 	return out
 }

@@ -429,11 +429,9 @@ func DistinctBy[T any, K comparable](s Seq[T], key func(T) K) Seq[T] {
 	return s.DistinctBy(key)
 }
 
-// Pair holds two values produced by Zip.
-type Pair[T, U any] struct {
-	First  T
-	Second U
-}
+// Pair is a type alias for option.Pair, kept for backward compatibility.
+// Prefer option.Pair in new code.
+type Pair[T, U any] = option.Pair[T, U]
 
 // Zip lazily pairs elements from two Seqs. Stops at the shorter one.
 // Note: Zip cannot be a method because returning Seq[Pair[T,U]] would create

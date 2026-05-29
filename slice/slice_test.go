@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/natalie-o-perret/go-functionalish/option"
-	"github.com/natalie-o-perret/go-functionalish/seq"
 	goslice "github.com/natalie-o-perret/go-functionalish/slice"
 )
 
@@ -244,16 +243,11 @@ func TestReduce(t *testing.T) {
 	}
 }
 
-func TestToSliceAndToSeq(t *testing.T) {
+func TestToSlice(t *testing.T) {
 	s := goslice.Of(1, 2, 3)
 	raw := s.ToSlice()
 	if !slices.Equal(raw, []int{1, 2, 3}) {
 		t.Fatal("ToSlice")
-	}
-	sq := s.ToSeq()
-	got := sq.ToSlice()
-	if !slices.Equal(got, []int{1, 2, 3}) {
-		t.Fatal("ToSeq")
 	}
 }
 
@@ -314,10 +308,10 @@ func TestGroupBy(t *testing.T) {
 	if len(m) != 2 {
 		t.Fatal("GroupBy len")
 	}
-	if !eq(m[0], goslice.Of(2, 4, 6)) {
+	if !slices.Equal(m[0], []int{2, 4, 6}) {
 		t.Fatalf("GroupBy even: got %v", m[0])
 	}
-	if !eq(m[1], goslice.Of(1, 3, 5)) {
+	if !slices.Equal(m[1], []int{1, 3, 5}) {
 		t.Fatalf("GroupBy odd: got %v", m[1])
 	}
 }
@@ -393,7 +387,7 @@ func TestZip(t *testing.T) {
 	a := goslice.Of(1, 2, 3)
 	b := goslice.Of("a", "b", "c")
 	got := goslice.Zip(a, b)
-	want := []seq.Pair[int, string]{{First: 1, Second: "a"}, {First: 2, Second: "b"}, {First: 3, Second: "c"}}
+	want := []option.Pair[int, string]{{First: 1, Second: "a"}, {First: 2, Second: "b"}, {First: 3, Second: "c"}}
 	if len(got) != len(want) {
 		t.Fatalf("Zip len: %d", len(got))
 	}

@@ -1,11 +1,11 @@
 name: ci - lint - files - *.go, *.sum
 on:
   push:
-    branches: [ main ]
-    paths: [ "**/*.go", "go.sum", ".golangci.yml" ]
+    branches: [main]
+    paths: ["**/*.go", "go.sum", ".golangci.yml"]
   pull_request:
-    branches: [ main ]
-    paths: [ "**/*.go", "go.sum", ".golangci.yml" ]
+    branches: [main]
+    paths: ["**/*.go", "go.sum", ".golangci.yml"]
 jobs:
   golangci-lint:
     name: golangci-lint
