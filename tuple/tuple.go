@@ -43,38 +43,73 @@ func (t T2[A, B]) Unpack() (A, B) { return t.First, t.Second }
 // Swap returns a new T2 with First and Second exchanged.
 func (t T2[A, B]) Swap() T2[B, A] { return T2[B, A]{First: t.Second, Second: t.First} }
 
-// Unpack returns the three fields as individual return values.
-func (t T3[A, B, C]) Unpack() (A, B, C) { return t.First, t.Second, t.Third }
-
-// Unpack returns the four fields as individual return values.
-func (t T4[A, B, C, D]) Unpack() (A, B, C, D) { return t.First, t.Second, t.Third, t.Fourth }
-
 // Apply calls fn with the two fields of t and returns the result.
-func Apply[A, B, R any](t T2[A, B], fn func(A, B) R) R { return fn(t.First, t.Second) }
+func (t T2[A, B]) Apply[R any](fn func(A, B) R) R { return fn(t.First, t.Second) }
 
-// Apply3 calls fn with the three fields of t and returns the result.
-func Apply3[A, B, C, R any](t T3[A, B, C], fn func(A, B, C) R) R {
-	return fn(t.First, t.Second, t.Third)
-}
-
-// Apply4 calls fn with the four fields of t and returns the result.
-func Apply4[A, B, C, D, R any](t T4[A, B, C, D], fn func(A, B, C, D) R) R {
-	return fn(t.First, t.Second, t.Third, t.Fourth)
-}
-
-// MapFirst transforms the First element of a T2, leaving Second unchanged.
-func MapFirst[A, B, R any](t T2[A, B], fn func(A) R) T2[R, B] {
+// MapFirst transforms the First element, leaving Second unchanged.
+func (t T2[A, B]) MapFirst[R any](fn func(A) R) T2[R, B] {
 	return T2[R, B]{First: fn(t.First), Second: t.Second}
 }
 
-// MapSecond transforms the Second element of a T2, leaving First unchanged.
-func MapSecond[A, B, R any](t T2[A, B], fn func(B) R) T2[A, R] {
+// MapSecond transforms the Second element, leaving First unchanged.
+func (t T2[A, B]) MapSecond[R any](fn func(B) R) T2[A, R] {
 	return T2[A, R]{First: t.First, Second: fn(t.Second)}
 }
 
 // Map transforms both elements of a T2 independently.
-func Map[A, B, RA, RB any](t T2[A, B], fnA func(A) RA, fnB func(B) RB) T2[RA, RB] {
+func (t T2[A, B]) Map[RA, RB any](fnA func(A) RA, fnB func(B) RB) T2[RA, RB] {
 	return T2[RA, RB]{First: fnA(t.First), Second: fnB(t.Second)}
+}
+
+// Unpack returns the three fields as individual return values.
+func (t T3[A, B, C]) Unpack() (A, B, C) { return t.First, t.Second, t.Third }
+
+// Apply calls fn with the three fields of t and returns the result.
+func (t T3[A, B, C]) Apply[R any](fn func(A, B, C) R) R {
+	return fn(t.First, t.Second, t.Third)
+}
+
+// Unpack returns the four fields as individual return values.
+func (t T4[A, B, C, D]) Unpack() (A, B, C, D) { return t.First, t.Second, t.Third, t.Fourth }
+
+// Apply calls fn with the four fields of t and returns the result.
+func (t T4[A, B, C, D]) Apply[R any](fn func(A, B, C, D) R) R {
+	return fn(t.First, t.Second, t.Third, t.Fourth)
+}
+
+// -- package-level functions (kept for backward compatibility) -----------------
+// Prefer the method forms: t.Apply(fn), t.MapFirst(fn), t.MapSecond(fn), t.Map(fnA, fnB).
+
+// Apply calls fn with the two fields of t and returns the result.
+//
+// Deprecated: use t.Apply(fn) for a fluent, chainable style.
+func Apply[A, B, R any](t T2[A, B], fn func(A, B) R) R { return t.Apply(fn) }
+
+// Apply3 calls fn with the three fields of t and returns the result.
+//
+// Deprecated: use t.Apply(fn) for a fluent, chainable style.
+func Apply3[A, B, C, R any](t T3[A, B, C], fn func(A, B, C) R) R { return t.Apply(fn) }
+
+// Apply4 calls fn with the four fields of t and returns the result.
+//
+// Deprecated: use t.Apply(fn) for a fluent, chainable style.
+func Apply4[A, B, C, D, R any](t T4[A, B, C, D], fn func(A, B, C, D) R) R { return t.Apply(fn) }
+
+// MapFirst transforms the First element of a T2, leaving Second unchanged.
+//
+// Deprecated: use t.MapFirst(fn) for a fluent, chainable style.
+func MapFirst[A, B, R any](t T2[A, B], fn func(A) R) T2[R, B] { return t.MapFirst(fn) }
+
+// MapSecond transforms the Second element of a T2, leaving First unchanged.
+//
+// Deprecated: use t.MapSecond(fn) for a fluent, chainable style.
+func MapSecond[A, B, R any](t T2[A, B], fn func(B) R) T2[A, R] { return t.MapSecond(fn) }
+
+// Map transforms both elements of a T2 independently.
+//
+// Deprecated: use t.Map(fnA, fnB) for a fluent, chainable style.
+func Map[A, B, RA, RB any](t T2[A, B], fnA func(A) RA, fnB func(B) RB) T2[RA, RB] {
+	return t.Map(fnA, fnB)
 }
 
 // Curry converts a binary function (A, B) -> C into a curried form A -> B -> C.

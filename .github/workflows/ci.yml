@@ -2,24 +2,46 @@ name: ci - build + tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test:
-    name: test (${{ matrix.go }})
+    name: test (gotip)
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go: [ "1.24", "1.26" ]
+    env:
+      GOTOOLCHAIN: local
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-go@v6
+      - name: set up Go bootstrap
+        uses: actions/setup-go@v6
         with:
-          go-version: ${{ matrix.go }}
+          go-version: "1.26"
           cache: true
+
+      - name: weekly date for gotip cache
+        id: weekly
+        run: echo "date=$(date +%Y-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: cache gotip SDK
+        id: cache-gotip
+        uses: actions/cache@v4
+        with:
+          path: ~/sdk/gotip
+          key: gotip-${{ runner.os }}-${{ steps.weekly.outputs.date }}
+          restore-keys: gotip-${{ runner.os }}-
+
+      - name: install and build gotip
+        run: |
+          go install golang.org/dl/gotip@latest
+          if [ "${{ steps.cache-gotip.outputs.cache-hit }}" != "true" ]; then
+            "$(go env GOPATH)/bin/gotip" download
+          fi
+          GOTIP_ROOT=$("$(go env GOPATH)/bin/gotip" env GOROOT)
+          echo "GOROOT=$GOTIP_ROOT" >> "$GITHUB_ENV"
+          echo "$GOTIP_ROOT/bin" >> "$GITHUB_PATH"
 
       - name: download deps
         run: go mod download
@@ -30,15 +52,13 @@ jobs:
       - name: test
         run: go test -race -coverprofile=coverage.out ./...
 
-      - name: coverage gate (≥ 80%)
-        if: matrix.go == '1.26'
+      - name: coverage gate (>= 80%)
         run: |
           total=$(go tool cover -func=coverage.out | awk '/^total:/ {gsub(/%/,"",$3); print $3}')
           echo "Total coverage: ${total}%"
           awk -v t="$total" 'BEGIN { if (t+0 < 80) { print "Coverage " t "% is below 80% threshold"; exit 1 } }'
 
       - name: upload coverage
-        if: matrix.go == '1.26'
         uses: actions/upload-artifact@v7
         with:
           name: coverage
@@ -47,13 +67,38 @@ jobs:
   govulncheck:
     name: govulncheck
     runs-on: ubuntu-latest
+    env:
+      GOTOOLCHAIN: local
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-go@v6
+      - name: set up Go bootstrap
+        uses: actions/setup-go@v6
         with:
           go-version: "1.26"
           cache: true
+
+      - name: weekly date for gotip cache
+        id: weekly
+        run: echo "date=$(date +%Y-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: cache gotip SDK
+        id: cache-gotip
+        uses: actions/cache@v4
+        with:
+          path: ~/sdk/gotip
+          key: gotip-${{ runner.os }}-${{ steps.weekly.outputs.date }}
+          restore-keys: gotip-${{ runner.os }}-
+
+      - name: install and build gotip
+        run: |
+          go install golang.org/dl/gotip@latest
+          if [ "${{ steps.cache-gotip.outputs.cache-hit }}" != "true" ]; then
+            "$(go env GOPATH)/bin/gotip" download
+          fi
+          GOTIP_ROOT=$("$(go env GOPATH)/bin/gotip" env GOROOT)
+          echo "GOROOT=$GOTIP_ROOT" >> "$GITHUB_ENV"
+          echo "$GOTIP_ROOT/bin" >> "$GITHUB_PATH"
 
       - name: install govulncheck
         run: go install golang.org/x/vuln/cmd/govulncheck@latest

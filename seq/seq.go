@@ -2,10 +2,16 @@
 // by F# sequences. Pipelines are built by chaining methods; nothing
 // runs until a terminal method (ToSlice, Head, Length, ...) is called.
 //
-// Design note : methods vs package-level functions:
-// Go does not allow methods to introduce new type parameters. Operations that
-// transform the element type (Map, Collect, GroupBy, ...) are therefore
-// package-level functions. Same-type operations are methods.
+// Generic methods (Go 1.27+) allow type-changing operations such as Map,
+// Collect, Choose, Fold, GroupBy, and SortBy to be called directly on
+// a Seq value, enabling fully fluent left-to-right pipelines:
+// (Zip remains a package-level function due to a type-checker instantiation cycle.)
+//
+//	seq.OfSlice(items).
+//	    Filter(isActive).
+//	    Map(toName).
+//	    SortBy(strings.ToLower).
+//	    ToSlice()
 package seq
 
 import (
@@ -174,15 +180,108 @@ func (s Seq[T]) SortWith(cmpFn func(a, b T) int) Seq[T] {
 	return OfSlice(cp)
 }
 
+// -- type-transforming methods (enabled by Go 1.27 generic methods) ------------
+
+// Map transforms each element T => R lazily.
+func (s Seq[T]) Map[R any](fn func(T) R) Seq[R] {
+	return func(yield func(R) bool) {
+		for v := range s {
+			if !yield(fn(v)) {
+				return
+			}
+		}
+	}
+}
+
+// Collect transforms T => []R lazily, flattening the results into a single Seq[R].
+func (s Seq[T]) Collect[R any](fn func(T) []R) Seq[R] {
+	return func(yield func(R) bool) {
+		for v := range s {
+			for _, r := range fn(v) {
+				if !yield(r) {
+					return
+				}
+			}
+		}
+	}
+}
+
+// Choose applies fn to each element, keeping Some values and discarding None.
+func (s Seq[T]) Choose[R any](fn func(T) option.Option[R]) Seq[R] {
+	return func(yield func(R) bool) {
+		for v := range s {
+			if r := fn(v); r.IsSome() {
+				if !yield(r.Unwrap()) {
+					return
+				}
+			}
+		}
+	}
+}
+
+// Fold folds the sequence left using fn, starting with initial.
+func (s Seq[T]) Fold[A any](initial A, fn func(A, T) A) A {
+	acc := initial
+	for v := range s {
+		acc = fn(acc, v)
+	}
+	return acc
+}
+
+// GroupBy materialises the sequence and groups elements by key.
+func (s Seq[T]) GroupBy[K comparable](key func(T) K) map[K][]T {
+	out := make(map[K][]T)
+	for v := range s {
+		k := key(v)
+		out[k] = append(out[k], v)
+	}
+	return out
+}
+
 // SortBy materialises and sorts ascending by an ordered key.
-func SortBy[T any, K cmp.Ordered](s Seq[T], key func(T) K) Seq[T] {
+func (s Seq[T]) SortBy[K cmp.Ordered](key func(T) K) Seq[T] {
 	return s.SortWith(func(a, b T) int { return cmp.Compare(key(a), key(b)) })
 }
 
 // SortByDescending materialises and sorts descending by an ordered key.
-func SortByDescending[T any, K cmp.Ordered](s Seq[T], key func(T) K) Seq[T] {
+func (s Seq[T]) SortByDescending[K cmp.Ordered](key func(T) K) Seq[T] {
 	return s.SortWith(func(a, b T) int { return cmp.Compare(key(b), key(a)) })
 }
+
+// DistinctBy lazily removes duplicates by key, preserving first-seen order.
+func (s Seq[T]) DistinctBy[K comparable](key func(T) K) Seq[T] {
+	return func(yield func(T) bool) {
+		seen := make(map[K]struct{})
+		for v := range s {
+			k := key(v)
+			if _, ok := seen[k]; !ok {
+				seen[k] = struct{}{}
+				if !yield(v) {
+					return
+				}
+			}
+		}
+	}
+}
+
+// -- type-transforming package-level functions ---------------------------------
+// Kept for backward compatibility. Prefer the method forms: s.Map(fn), s.GroupBy(key), etc.
+
+// SortBy materialises and sorts ascending by an ordered key.
+//
+// Deprecated: use s.SortBy(key) for a fluent, chainable style.
+func SortBy[T any, K cmp.Ordered](s Seq[T], key func(T) K) Seq[T] {
+	return s.SortBy(key)
+}
+
+// SortByDescending materialises and sorts descending by an ordered key.
+//
+// Deprecated: use s.SortByDescending(key) for a fluent, chainable style.
+func SortByDescending[T any, K cmp.Ordered](s Seq[T], key func(T) K) Seq[T] {
+	return s.SortByDescending(key)
+}
+
+// -- lazy pipeline methods (continued) ----------------------------------------
 
 // Rev materialises, reverses, then re-wraps lazily.
 func (s Seq[T]) Rev() Seq[T] {
@@ -280,48 +379,33 @@ func (s Seq[T]) TryLast() option.Option[T] {
 }
 
 // Fold folds the sequence using fn, starting with initial.
+//
+// Deprecated: use s.Fold(initial, fn) for a fluent, chainable style.
 func Fold[T, A any](s Seq[T], initial A, fn func(A, T) A) A {
-	acc := initial
-	for v := range s {
-		acc = fn(acc, v)
-	}
-	return acc
+	return s.Fold(initial, fn)
 }
 
-// -- type-transforming package-level functions ---------------------------------
+// -- type-transforming package-level functions (continued) --------------------
 
 // Map transforms Seq[T] => Seq[R] lazily.
+//
+// Deprecated: use s.Map(fn) for a fluent, chainable style.
 func Map[T, R any](s Seq[T], fn func(T) R) Seq[R] {
-	return func(yield func(R) bool) {
-		for v := range s {
-			if !yield(fn(v)) {
-				return
-			}
-		}
-	}
+	return s.Map(fn)
 }
 
 // Collect transforms Seq[T] => Seq[R] via a one-to-many mapping.
+//
+// Deprecated: use s.Collect(fn) for a fluent, chainable style.
 func Collect[T, R any](s Seq[T], fn func(T) []R) Seq[R] {
-	return func(yield func(R) bool) {
-		for v := range s {
-			for _, r := range fn(v) {
-				if !yield(r) {
-					return
-				}
-			}
-		}
-	}
+	return s.Collect(fn)
 }
 
 // GroupBy materialises and groups elements by key.
+//
+// Deprecated: use s.GroupBy(key) for a fluent, chainable style.
 func GroupBy[T any, K comparable](s Seq[T], key func(T) K) map[K][]T {
-	out := make(map[K][]T)
-	for v := range s {
-		k := key(v)
-		out[k] = append(out[k], v)
-	}
-	return out
+	return s.GroupBy(key)
 }
 
 // Distinct lazily removes duplicate comparable elements, preserving first-seen order.
@@ -340,28 +424,19 @@ func Distinct[T comparable](s Seq[T]) Seq[T] {
 }
 
 // DistinctBy lazily removes duplicates by key, preserving first-seen order.
+//
+// Deprecated: use s.DistinctBy(key) for a fluent, chainable style.
 func DistinctBy[T any, K comparable](s Seq[T], key func(T) K) Seq[T] {
-	return func(yield func(T) bool) {
-		seen := make(map[K]struct{})
-		for v := range s {
-			k := key(v)
-			if _, ok := seen[k]; !ok {
-				seen[k] = struct{}{}
-				if !yield(v) {
-					return
-				}
-			}
-		}
-	}
+	return s.DistinctBy(key)
 }
 
-// Pair holds two values produced by Zip.
-type Pair[T, U any] struct {
-	First  T
-	Second U
-}
+// Pair is a type alias for option.Pair, kept for backward compatibility.
+// Prefer option.Pair in new code.
+type Pair[T, U any] = option.Pair[T, U]
 
 // Zip lazily pairs elements from two Seqs. Stops at the shorter one.
+// Note: Zip cannot be a method because returning Seq[Pair[T,U]] would create
+// an instantiation cycle in the type checker (Go spec §Generic methods).
 func Zip[T, U any](a Seq[T], b Seq[U]) Seq[Pair[T, U]] {
 	return func(yield func(Pair[T, U]) bool) {
 		nextB, stopB := iter.Pull(iter.Seq[U](b))
@@ -379,14 +454,8 @@ func Zip[T, U any](a Seq[T], b Seq[U]) Seq[Pair[T, U]] {
 }
 
 // Choose applies fn to each element, keeping Some values and discarding None.
+//
+// Deprecated: use s.Choose(fn) for a fluent, chainable style.
 func Choose[T, R any](s Seq[T], fn func(T) option.Option[R]) Seq[R] {
-	return func(yield func(R) bool) {
-		for v := range s {
-			if r := fn(v); r.IsSome() {
-				if !yield(r.Unwrap()) {
-					return
-				}
-			}
-		}
-	}
+	return s.Choose(fn)
 }

@@ -269,10 +269,10 @@ func (s Seq[T]) TryExactlyOne() option.Option[T] {
 	return option.None[T]()
 }
 
-// -- additional type-transforming package-level functions -----------------------
+// -- type-transforming methods (enabled by Go 1.27 generic methods) ------------
 
-// Mapi transforms Seq[T] => Seq[R] lazily, providing the index to fn.
-func Mapi[T, R any](s Seq[T], fn func(int, T) R) Seq[R] {
+// Mapi transforms Seq[T] => Seq[R] lazily, providing the zero-based index to fn.
+func (s Seq[T]) Mapi[R any](fn func(int, T) R) Seq[R] {
 	return func(yield func(R) bool) {
 		i := 0
 		for v := range s {
@@ -282,6 +282,80 @@ func Mapi[T, R any](s Seq[T], fn func(int, T) R) Seq[R] {
 			i++
 		}
 	}
+}
+
+// Scan is like Fold but yields each intermediate accumulator value, starting with initial.
+func (s Seq[T]) Scan[S any](initial S, fn func(S, T) S) Seq[S] {
+	return func(yield func(S) bool) {
+		acc := initial
+		if !yield(acc) {
+			return
+		}
+		for v := range s {
+			acc = fn(acc, v)
+			if !yield(acc) {
+				return
+			}
+		}
+	}
+}
+
+// ScanBack is like FoldBack but yields each intermediate accumulator value. Materialises.
+func (s Seq[T]) ScanBack[S any](initial S, fn func(T, S) S) Seq[S] {
+	items := slices.Collect(iter.Seq[T](s))
+	return func(yield func(S) bool) {
+		results := make([]S, len(items)+1)
+		results[len(items)] = initial
+		for i := len(items) - 1; i >= 0; i-- {
+			results[i] = fn(items[i], results[i+1])
+		}
+		for _, r := range results {
+			if !yield(r) {
+				return
+			}
+		}
+	}
+}
+
+// TryPick applies fn to each element, returning the first Some result. Short-circuits.
+func (s Seq[T]) TryPick[R any](fn func(T) option.Option[R]) option.Option[R] {
+	for v := range s {
+		if r := fn(v); r.IsSome() {
+			return r
+		}
+	}
+	return option.None[R]()
+}
+
+// FoldBack folds from the right with an accumulator. Materialises.
+func (s Seq[T]) FoldBack[S any](initial S, fn func(T, S) S) S {
+	items := slices.Collect(iter.Seq[T](s))
+	acc := initial
+	for i := len(items) - 1; i >= 0; i-- {
+		acc = fn(items[i], acc)
+	}
+	return acc
+}
+
+// MapFold combines map and fold in one pass, returning the mapped results and final state.
+func (s Seq[T]) MapFold[S, R any](initial S, fn func(S, T) (R, S)) ([]R, S) {
+	var results []R
+	acc := initial
+	for v := range s {
+		var r R
+		r, acc = fn(acc, v)
+		results = append(results, r)
+	}
+	return results, acc
+}
+
+// -- additional type-transforming package-level functions -----------------------
+
+// Mapi transforms Seq[T] => Seq[R] lazily, providing the index to fn.
+//
+// Deprecated: use s.Mapi(fn) for a fluent, chainable style.
+func Mapi[T, R any](s Seq[T], fn func(int, T) R) Seq[R] {
+	return s.Mapi(fn)
 }
 
 // Indexed pairs each element with its zero-based index.
@@ -377,46 +451,24 @@ func SplitInto[T any](s Seq[T], count int) Seq[[]T] {
 }
 
 // Scan is like Fold but yields each intermediate accumulator value, starting with initial.
+//
+// Deprecated: use s.Scan(initial, fn) for a fluent, chainable style.
 func Scan[T, S any](s Seq[T], initial S, fn func(S, T) S) Seq[S] {
-	return func(yield func(S) bool) {
-		acc := initial
-		if !yield(acc) {
-			return
-		}
-		for v := range s {
-			acc = fn(acc, v)
-			if !yield(acc) {
-				return
-			}
-		}
-	}
+	return s.Scan(initial, fn)
 }
 
 // ScanBack is like FoldBack but yields each intermediate accumulator value. Materialises.
+//
+// Deprecated: use s.ScanBack(initial, fn) for a fluent, chainable style.
 func ScanBack[T, S any](s Seq[T], initial S, fn func(T, S) S) Seq[S] {
-	items := slices.Collect(iter.Seq[T](s))
-	return func(yield func(S) bool) {
-		results := make([]S, len(items)+1)
-		results[len(items)] = initial
-		for i := len(items) - 1; i >= 0; i-- {
-			results[i] = fn(items[i], results[i+1])
-		}
-		for _, r := range results {
-			if !yield(r) {
-				return
-			}
-		}
-	}
+	return s.ScanBack(initial, fn)
 }
 
 // TryPick applies fn to each element, returning the first Some result. Short-circuits.
+//
+// Deprecated: use s.TryPick(fn) for a fluent, chainable style.
 func TryPick[T, R any](s Seq[T], fn func(T) option.Option[R]) option.Option[R] {
-	for v := range s {
-		if r := fn(v); r.IsSome() {
-			return r
-		}
-	}
-	return option.None[R]()
+	return s.TryPick(fn)
 }
 
 // Contains returns true if the sequence contains the given value. Short-circuits.
@@ -691,13 +743,10 @@ func CompareWith[T any](a, b Seq[T], cmpFn func(T, T) int) int {
 }
 
 // FoldBack folds from the right with an accumulator. Materialises.
+//
+// Deprecated: use s.FoldBack(initial, fn) for a fluent, chainable style.
 func FoldBack[T, S any](s Seq[T], initial S, fn func(T, S) S) S {
-	items := slices.Collect(iter.Seq[T](s))
-	acc := initial
-	for i := len(items) - 1; i >= 0; i-- {
-		acc = fn(items[i], acc)
-	}
-	return acc
+	return s.FoldBack(initial, fn)
 }
 
 // Transpose transposes a Seq of Seqs (rows to columns). Materialises.
@@ -735,15 +784,10 @@ func Transpose[T any](s Seq[Seq[T]]) Seq[Seq[T]] {
 
 // MapFold combines map and fold in one pass. Materialises.
 // Returns the mapped results as a slice and the final state.
+//
+// Deprecated: use s.MapFold(initial, fn) for a fluent, chainable style.
 func MapFold[S, T, R any](s Seq[T], initial S, fn func(S, T) (R, S)) ([]R, S) {
-	var results []R
-	acc := initial
-	for v := range s {
-		var r R
-		r, acc = fn(acc, v)
-		results = append(results, r)
-	}
-	return results, acc
+	return s.MapFold(initial, fn)
 }
 
 // -- additional constructors ---------------------------------------------------
