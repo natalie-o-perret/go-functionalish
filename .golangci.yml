@@ -48,3 +48,11 @@ linters:
       - path: "pipe/pipe.go"
         linters: [ revive ]
         text: "stutters"
+      # golangci-lint's bundled x/tools type-checker panics with
+      # "runtime error: index out of range [1] with length 0" when loading
+      # packages that declare Go 1.27 generic methods (e.g. option.Map[R]).
+      # The panic is recovered internally and surfaced as a typecheck error.
+      # Real type errors are caught by the build+tests CI job (runs gotip directly).
+      # Remove once golang.org/x/tools ships support for Go 1.27 generic methods.
+      - linters: [ typecheck ]
+        text: "runtime error: index out of range"
