@@ -129,10 +129,10 @@ func (v Validation[T, E]) ToOption() option.Option[T] {
 	return option.None[T]()
 }
 
-// -- type-transforming functions (package-level) ------------------------------
+// -- type-transforming methods (Go 1.27 generic methods) ---------------------
 
 // Map applies fn to the success value, passing Failure unchanged.
-func Map[T, R, E any](v Validation[T, E], fn func(T) R) Validation[R, E] {
+func (v Validation[T, E]) Map[R any](fn func(T) R) Validation[R, E] {
 	if v.ok {
 		return Success[E, R](fn(v.value))
 	}
@@ -140,7 +140,7 @@ func Map[T, R, E any](v Validation[T, E], fn func(T) R) Validation[R, E] {
 }
 
 // MapError applies fn to each error, passing Success unchanged.
-func MapError[T, E, F any](v Validation[T, E], fn func(E) F) Validation[T, F] {
+func (v Validation[T, E]) MapError[F any](fn func(E) F) Validation[T, F] {
 	if v.ok {
 		return Success[F, T](v.value)
 	}
@@ -153,7 +153,7 @@ func MapError[T, E, F any](v Validation[T, E], fn func(E) F) Validation[T, F] {
 
 // Bind applies fn to the success value, flattening the result.
 // Note: this short-circuits like Result. For error accumulation, use Map2-Map5 or Apply.
-func Bind[T, R, E any](v Validation[T, E], fn func(T) Validation[R, E]) Validation[R, E] {
+func (v Validation[T, E]) Bind[R any](fn func(T) Validation[R, E]) Validation[R, E] {
 	if v.ok {
 		return fn(v.value)
 	}

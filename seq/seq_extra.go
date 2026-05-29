@@ -375,7 +375,7 @@ func Pairwise[T any](s Seq[T]) Seq[Pair[T, T]] {
 }
 
 // Windowed yields sliding windows of the given size as slices.
-func Windowed[T any](s Seq[T], size int) Seq[[]T] {
+func (s Seq[T]) Windowed(size int) ChunkedSeq[T] {
 	return func(yield func([]T) bool) {
 		buf := make([]T, 0, size)
 		for v := range s {
@@ -397,7 +397,7 @@ func Windowed[T any](s Seq[T], size int) Seq[[]T] {
 }
 
 // ChunkBySize yields non-overlapping chunks of the given size.
-func ChunkBySize[T any](s Seq[T], size int) Seq[[]T] {
+func (s Seq[T]) ChunkBySize(size int) ChunkedSeq[T] {
 	return func(yield func([]T) bool) {
 		chunk := make([]T, 0, size)
 		for v := range s {
@@ -416,10 +416,10 @@ func ChunkBySize[T any](s Seq[T], size int) Seq[[]T] {
 }
 
 // SplitInto splits the sequence into at most count roughly-equal chunks. Materialises.
-func SplitInto[T any](s Seq[T], count int) Seq[[]T] {
+func (s Seq[T]) SplitInto(count int) ChunkedSeq[T] {
 	items := slices.Collect(iter.Seq[T](s))
 	if count <= 0 || len(items) == 0 {
-		return Empty[[]T]()
+		return ChunkedSeq[T](func(func([]T) bool) {})
 	}
 	return func(yield func([]T) bool) {
 		n := len(items)
@@ -481,7 +481,7 @@ func Sum[T Numeric](s Seq[T]) T {
 }
 
 // SumBy returns the sum of fn(element) for all elements.
-func SumBy[T any, N Numeric](s Seq[T], fn func(T) N) N {
+func (s Seq[T]) SumBy[N Numeric](fn func(T) N) N {
 	var sum N
 	for v := range s {
 		sum += fn(v)
@@ -514,7 +514,7 @@ func Max[T cmp.Ordered](s Seq[T]) (T, bool) {
 }
 
 // MinBy returns the element with the minimum key and true, or (zero, false) if empty.
-func MinBy[T any, K cmp.Ordered](s Seq[T], fn func(T) K) (T, bool) {
+func (s Seq[T]) MinBy[K cmp.Ordered](fn func(T) K) (T, bool) {
 	first := true
 	var minVal T
 	var minKey K
@@ -528,7 +528,7 @@ func MinBy[T any, K cmp.Ordered](s Seq[T], fn func(T) K) (T, bool) {
 }
 
 // MaxBy returns the element with the maximum key and true, or (zero, false) if empty.
-func MaxBy[T any, K cmp.Ordered](s Seq[T], fn func(T) K) (T, bool) {
+func (s Seq[T]) MaxBy[K cmp.Ordered](fn func(T) K) (T, bool) {
 	first := true
 	var maxVal T
 	var maxKey K
@@ -558,7 +558,7 @@ func Average[T Numeric](s Seq[T]) (float64, bool) {
 
 // AverageBy returns the arithmetic mean of fn(element) as float64, and true.
 // Returns (0, false) if empty.
-func AverageBy[T any, N Numeric](s Seq[T], fn func(T) N) (float64, bool) {
+func (s Seq[T]) AverageBy[N Numeric](fn func(T) N) (float64, bool) {
 	var sum N
 	count := 0
 	for v := range s {

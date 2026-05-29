@@ -28,7 +28,7 @@ func heavyFn(n int) float64 {
 func BenchmarkMap_Seq_10k(b *testing.B) {
 	data := ints(10_000)
 	for b.Loop() {
-		benchSink = seq.Map(seq.OfSlice(data), heavyFn).ToSlice()
+		benchSink = seq.OfSlice(data).Map(heavyFn).ToSlice()
 	}
 }
 
@@ -49,7 +49,7 @@ func BenchmarkMap_PSeq_10k_Workers4(b *testing.B) {
 func BenchmarkMap_Seq_100k(b *testing.B) {
 	data := ints(100_000)
 	for b.Loop() {
-		benchSink = seq.Map(seq.OfSlice(data), heavyFn).ToSlice()
+		benchSink = seq.OfSlice(data).Map(heavyFn).ToSlice()
 	}
 }
 
@@ -105,7 +105,7 @@ func BenchmarkReduce_PSeq_10k(b *testing.B) {
 func BenchmarkMap_Lightweight_Seq_10k(b *testing.B) {
 	data := ints(10_000)
 	for b.Loop() {
-		benchSink = seq.Map(seq.OfSlice(data), func(n int) int { return n * 2 }).ToSlice()
+		benchSink = seq.OfSlice(data).Map(func(n int) int { return n * 2 }).ToSlice()
 	}
 }
 

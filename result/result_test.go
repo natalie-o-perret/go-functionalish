@@ -252,14 +252,14 @@ func TestPipeline_OrderFulfillment(t *testing.T) {
 
 	// The full 8-step pipeline.
 	process := func(input string) result.Result[Receipt, string] {
-		r1 := parseOrder(input)               // step 1: Bind
-		r2 := r1.Bind(resolveCustomer)        // step 2: Bind
-		r3 := r2.Bind(checkInventory)         // step 3: Bind
-		r4 := r3.Map(priceItems)              // step 4: Map (pure)
-		r5 := r4.Bind(applyPromo)             // step 5: Bind
-		r6 := r5.Map(finalize)                // step 6: Map (pure)
-		r7 := r6.Bind(chargePayment)          // step 7: Bind
-		r8 := r7.Map(issueReceipt)            // step 8: Map (pure)
+		r1 := parseOrder(input)        // step 1: Bind
+		r2 := r1.Bind(resolveCustomer) // step 2: Bind
+		r3 := r2.Bind(checkInventory)  // step 3: Bind
+		r4 := r3.Map(priceItems)       // step 4: Map (pure)
+		r5 := r4.Bind(applyPromo)      // step 5: Bind
+		r6 := r5.Map(finalize)         // step 6: Map (pure)
+		r7 := r6.Bind(chargePayment)   // step 7: Bind
+		r8 := r7.Map(issueReceipt)     // step 8: Map (pure)
 		return r8
 	}
 
@@ -588,12 +588,12 @@ func TestPipeline_LedgerEntry(t *testing.T) {
 
 	// The full 6-step pipeline.
 	process := func(line string) result.Result[LedgerEntry, string] {
-		r1 := parseCSV(line)                 // step 1: Bind
-		r2 := r1.Bind(validateFields)        // step 2: Bind
-		r3 := r2.Bind(parseAmount)           // step 3: Bind (Try + MapErr)
-		r4 := r3.Bind(resolveAccount)        // step 4: Bind (FromOption)
-		r5 := r4.Map(applyRate)              // step 5: Map (pure)
-		r6 := r5.Map(formatEntry)            // step 6: Map (pure)
+		r1 := parseCSV(line)          // step 1: Bind
+		r2 := r1.Bind(validateFields) // step 2: Bind
+		r3 := r2.Bind(parseAmount)    // step 3: Bind (Try + MapErr)
+		r4 := r3.Bind(resolveAccount) // step 4: Bind (FromOption)
+		r5 := r4.Map(applyRate)       // step 5: Map (pure)
+		r6 := r5.Map(formatEntry)     // step 6: Map (pure)
 		return r6
 	}
 

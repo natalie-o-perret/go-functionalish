@@ -141,14 +141,14 @@ func PairwiseFn[T any]() func(Seq[T]) Seq[Pair[T, T]] {
 	return Pairwise[T]
 }
 
-// WindowedFn returns a transform: Seq[T] => Seq[[]T].
-func WindowedFn[T any](size int) func(Seq[T]) Seq[[]T] {
-	return func(s Seq[T]) Seq[[]T] { return Windowed(s, size) }
+// WindowedFn returns a transform: Seq[T] => ChunkedSeq[T].
+func WindowedFn[T any](size int) func(Seq[T]) ChunkedSeq[T] {
+	return func(s Seq[T]) ChunkedSeq[T] { return s.Windowed(size) }
 }
 
-// ChunkBySizeFn returns a transform: Seq[T] => Seq[[]T].
-func ChunkBySizeFn[T any](size int) func(Seq[T]) Seq[[]T] {
-	return func(s Seq[T]) Seq[[]T] { return ChunkBySize(s, size) }
+// ChunkBySizeFn returns a transform: Seq[T] => ChunkedSeq[T].
+func ChunkBySizeFn[T any](size int) func(Seq[T]) ChunkedSeq[T] {
+	return func(s Seq[T]) ChunkedSeq[T] { return s.ChunkBySize(size) }
 }
 
 // ScanFn returns a transform: Seq[T] => Seq[S].
@@ -184,6 +184,26 @@ func ToSliceFn[T any]() func(Seq[T]) []T {
 // LengthFn returns a terminal: Seq[T] => int.
 func LengthFn[T any]() func(Seq[T]) int {
 	return func(s Seq[T]) int { return s.Length() }
+}
+
+// SumByFn returns a terminal: Seq[T] => N, summing fn(element) for all elements.
+func SumByFn[T any, N Numeric](fn func(T) N) func(Seq[T]) N {
+	return func(s Seq[T]) N { return s.SumBy(fn) }
+}
+
+// MinByFn returns a terminal: Seq[T] => (T, bool), yielding the element with the minimum key.
+func MinByFn[T any, K cmp.Ordered](fn func(T) K) func(Seq[T]) (T, bool) {
+	return func(s Seq[T]) (T, bool) { return s.MinBy(fn) }
+}
+
+// MaxByFn returns a terminal: Seq[T] => (T, bool), yielding the element with the maximum key.
+func MaxByFn[T any, K cmp.Ordered](fn func(T) K) func(Seq[T]) (T, bool) {
+	return func(s Seq[T]) (T, bool) { return s.MaxBy(fn) }
+}
+
+// AverageByFn returns a terminal: Seq[T] => (float64, bool), averaging fn(element).
+func AverageByFn[T any, N Numeric](fn func(T) N) func(Seq[T]) (float64, bool) {
+	return func(s Seq[T]) (float64, bool) { return s.AverageBy(fn) }
 }
 
 // ZipWithFn returns a transform: Seq[T] => Seq[R], combining with other using fn.

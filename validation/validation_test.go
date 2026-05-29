@@ -101,31 +101,25 @@ func TestUnwrapErrorsPanicsOnSuccess(t *testing.T) {
 // -- Map / MapError / Bind ----------------------------------------------------
 
 func TestMap(t *testing.T) {
-	s := validation.Map(validation.Success[string](5), func(n int) string {
+	s := validation.Success[string](5).Map(func(n int) string {
 		return fmt.Sprintf("%d!", n)
 	})
 	assertSuccess(t, s, "5!")
 
-	f := validation.Map(validation.Failure[int]("err"), func(_ int) string {
+	f := validation.Failure[int]("err").Map(func(_ int) string {
 		return "nope"
 	})
 	assertFailureN(t, f, 1)
 }
 
 func TestMapError(t *testing.T) {
-	f := validation.MapError(
-		validation.Failure[int]("bad"),
-		strings.ToUpper,
-	)
+	f := validation.Failure[int]("bad").MapError(strings.ToUpper)
 	errs := assertFailureN(t, f, 1)
 	if errs[0] != "BAD" {
 		t.Fatalf("got %v", errs)
 	}
 
-	s := validation.MapError(
-		validation.Success[string](42),
-		strings.ToUpper,
-	)
+	s := validation.Success[string](42).MapError(strings.ToUpper)
 	assertSuccess(t, s, 42)
 }
 
@@ -136,9 +130,9 @@ func TestBind(t *testing.T) {
 		}
 		return validation.Success[string](n / 2)
 	}
-	assertSuccess(t, validation.Bind(validation.Success[string](10), half), 5)
-	assertFailureN(t, validation.Bind(validation.Success[string](7), half), 1)
-	assertFailureN(t, validation.Bind(validation.Failure[int]("first"), half), 1)
+	assertSuccess(t, validation.Success[string](10).Bind(half), 5)
+	assertFailureN(t, validation.Success[string](7).Bind(half), 1)
+	assertFailureN(t, validation.Failure[int]("first").Bind(half), 1)
 }
 
 // -- Apply --------------------------------------------------------------------

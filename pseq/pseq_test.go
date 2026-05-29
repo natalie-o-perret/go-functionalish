@@ -115,7 +115,7 @@ func TestMap_MoreWorkersThanElements(t *testing.T) {
 func TestMap_MatchesSeqMap(t *testing.T) {
 	data := ints(500)
 	fn := func(n int) int { return n*3 + 1 }
-	want := seq.Map(seq.OfSlice(data), fn).ToSlice()
+	want := seq.OfSlice(data).Map(fn).ToSlice()
 	got := pseq.Map(seq.OfSlice(data), fn, pseq.WithWorkers(4)).ToSlice()
 	assertSliceEqual(t, got, want)
 }
@@ -180,7 +180,7 @@ func TestCollect_OrderPreserved(t *testing.T) {
 func TestCollect_MatchesSeqCollect(t *testing.T) {
 	data := ints(100)
 	fn := func(n int) []int { return []int{n, n * 10} }
-	want := seq.Collect(seq.OfSlice(data), fn).ToSlice()
+	want := seq.OfSlice(data).Collect(fn).ToSlice()
 	got := pseq.Collect(seq.OfSlice(data), fn, pseq.WithWorkers(4)).ToSlice()
 	assertSliceEqual(t, got, want)
 }
@@ -205,7 +205,7 @@ func TestChoose_OrderPreserved(t *testing.T) {
 		return option.None[string]()
 	}
 	got := pseq.Choose(seq.OfSlice(data), fn, pseq.WithWorkers(4)).ToSlice()
-	want := seq.Choose(seq.OfSlice(data), fn).ToSlice()
+	want := seq.OfSlice(data).Choose(fn).ToSlice()
 	assertSliceEqual(t, got, want)
 }
 
@@ -286,7 +286,7 @@ func TestGroupBy_OrderPreservedInGroups(t *testing.T) {
 	key := func(n int) int { return n % 3 }
 
 	got := pseq.GroupBy(seq.OfSlice(data), key, pseq.WithWorkers(4))
-	want := seq.GroupBy(seq.OfSlice(data), key)
+	want := seq.OfSlice(data).GroupBy(key)
 
 	if len(got) != len(want) {
 		t.Fatalf("group count mismatch: got %d, want %d", len(got), len(want))
@@ -366,7 +366,7 @@ func TestSumBy_MatchesSeq(t *testing.T) {
 		data[i] = item{val: i}
 	}
 	fn := func(it item) int { return it.val }
-	want := seq.SumBy(seq.OfSlice(data), fn)
+	want := seq.OfSlice(data).SumBy(fn)
 	got := pseq.SumBy(seq.OfSlice(data), fn, pseq.WithWorkers(4))
 	if got != want {
 		t.Fatalf("expected %d, got %d", want, got)
@@ -514,7 +514,7 @@ func TestMap_CPUHeavy(t *testing.T) {
 		return x
 	}
 	got := pseq.Map(seq.OfSlice(data), heavy, pseq.WithWorkers(4)).ToSlice()
-	want := seq.Map(seq.OfSlice(data), heavy).ToSlice()
+	want := seq.OfSlice(data).Map(heavy).ToSlice()
 	if len(got) != len(want) {
 		t.Fatalf("length mismatch: got %d, want %d", len(got), len(want))
 	}
@@ -582,7 +582,7 @@ func TestFilter_LargeDataManyWorkers(t *testing.T) {
 func TestGroupBy_LargeData(t *testing.T) {
 	data := ints(10000)
 	key := func(n int) int { return n % 10 }
-	want := seq.GroupBy(seq.OfSlice(data), key)
+	want := seq.OfSlice(data).GroupBy(key)
 	got := pseq.GroupBy(seq.OfSlice(data), key, pseq.WithWorkers(8))
 
 	if len(got) != len(want) {

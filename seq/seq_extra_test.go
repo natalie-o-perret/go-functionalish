@@ -153,7 +153,7 @@ func TestPairwise(t *testing.T) {
 	}
 }
 func TestWindowed(t *testing.T) {
-	got := seq.Windowed(seq.OfSlice([]int{1, 2, 3, 4, 5}), 3).ToSlice()
+	got := seq.OfSlice([]int{1, 2, 3, 4, 5}).Windowed(3).ToSlice()
 	if len(got) != 3 {
 		t.Fatalf("got %d", len(got))
 	}
@@ -162,7 +162,7 @@ func TestWindowed(t *testing.T) {
 	assertSlice(t, got[2], []int{3, 4, 5})
 }
 func TestChunkBySize(t *testing.T) {
-	got := seq.ChunkBySize(seq.OfSlice([]int{1, 2, 3, 4, 5}), 2).ToSlice()
+	got := seq.OfSlice([]int{1, 2, 3, 4, 5}).ChunkBySize(2).ToSlice()
 	if len(got) != 3 {
 		t.Fatalf("got %d", len(got))
 	}
@@ -171,7 +171,7 @@ func TestChunkBySize(t *testing.T) {
 	assertSlice(t, got[2], []int{5})
 }
 func TestSplitInto(t *testing.T) {
-	got := seq.SplitInto(seq.OfSlice([]int{1, 2, 3, 4, 5}), 3).ToSlice()
+	got := seq.OfSlice([]int{1, 2, 3, 4, 5}).SplitInto(3).ToSlice()
 	if len(got) != 3 {
 		t.Fatalf("got %d", len(got))
 	}
@@ -214,7 +214,7 @@ func TestSum(t *testing.T) {
 }
 func TestSumByExtra(t *testing.T) {
 	type item struct{ v int }
-	if seq.SumBy(seq.OfSlice([]item{{1}, {2}, {3}}), func(i item) int { return i.v }) != 6 {
+	if seq.OfSlice([]item{{1}, {2}, {3}}).SumBy(func(i item) int { return i.v }) != 6 {
 		t.Fatal("wrong")
 	}
 }
@@ -234,11 +234,11 @@ func TestMinByMaxBy(t *testing.T) {
 		v int
 	}
 	items := []item{{"a", 3}, {"b", 1}, {"c", 2}}
-	v, _ := seq.MinBy(seq.OfSlice(items), func(i item) int { return i.v })
+	v, _ := seq.OfSlice(items).MinBy(func(i item) int { return i.v })
 	if v.n != "b" {
 		t.Fatalf("minBy: %v", v)
 	}
-	v, _ = seq.MaxBy(seq.OfSlice(items), func(i item) int { return i.v })
+	v, _ = seq.OfSlice(items).MaxBy(func(i item) int { return i.v })
 	if v.n != "a" {
 		t.Fatalf("maxBy: %v", v)
 	}

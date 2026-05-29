@@ -217,7 +217,7 @@ func TestPipeline10Steps(t *testing.T) {
 								SortWith(cmp.Compare) // 9
 
 	// Step 10: terminal
-	got := seq.Fold(sorted, "", func(acc, name string) string { // 10
+	got := sorted.Fold("", func(acc, name string) string { // 10
 		if acc == "" {
 			return name
 		}

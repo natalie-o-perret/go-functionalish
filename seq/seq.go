@@ -356,35 +356,7 @@ func (s Seq[T]) TryLast() option.Option[T] {
 	return option.None[T]()
 }
 
-// Fold folds the sequence using fn, starting with initial.
-//
-// Deprecated: use s.Fold(initial, fn) for a fluent, chainable style.
-func Fold[T, A any](s Seq[T], initial A, fn func(A, T) A) A {
-	return s.Fold(initial, fn)
-}
 
-// -- type-transforming package-level functions (continued) --------------------
-
-// Map transforms Seq[T] => Seq[R] lazily.
-//
-// Deprecated: use s.Map(fn) for a fluent, chainable style.
-func Map[T, R any](s Seq[T], fn func(T) R) Seq[R] {
-	return s.Map(fn)
-}
-
-// Collect transforms Seq[T] => Seq[R] via a one-to-many mapping.
-//
-// Deprecated: use s.Collect(fn) for a fluent, chainable style.
-func Collect[T, R any](s Seq[T], fn func(T) []R) Seq[R] {
-	return s.Collect(fn)
-}
-
-// GroupBy materialises and groups elements by key.
-//
-// Deprecated: use s.GroupBy(key) for a fluent, chainable style.
-func GroupBy[T any, K comparable](s Seq[T], key func(T) K) map[K][]T {
-	return s.GroupBy(key)
-}
 
 // Distinct lazily removes duplicate comparable elements, preserving first-seen order.
 func Distinct[T comparable](s Seq[T]) Seq[T] {
@@ -401,12 +373,7 @@ func Distinct[T comparable](s Seq[T]) Seq[T] {
 	}
 }
 
-// DistinctBy lazily removes duplicates by key, preserving first-seen order.
-//
-// Deprecated: use s.DistinctBy(key) for a fluent, chainable style.
-func DistinctBy[T any, K comparable](s Seq[T], key func(T) K) Seq[T] {
-	return s.DistinctBy(key)
-}
+
 
 // Pair is a type alias for option.Pair, kept for backward compatibility.
 // Prefer option.Pair in new code.
@@ -471,9 +438,4 @@ func Zip[T, U any](a Seq[T], b Seq[U]) Seq[Pair[T, U]] {
 	}
 }
 
-// Choose applies fn to each element, keeping Some values and discarding None.
-//
-// Deprecated: use s.Choose(fn) for a fluent, chainable style.
-func Choose[T, R any](s Seq[T], fn func(T) option.Option[R]) Seq[R] {
-	return s.Choose(fn)
-}
+
