@@ -207,7 +207,7 @@ work is CPU-heavy (parsing, math, serialisation). For lightweight lambdas
 
 ### option: explicit optionality
 
-```go
+````go
 // Instead of (T, bool) or *T
 name := option.Some("Alice")
 none := option.None[string]()
@@ -295,7 +295,7 @@ result.Traverse([]string{"1", "2", "3"}, func(s string) result.Result[int, strin
 // Interop with option
 opt := res.ToOption() // Ok => Some, Err => None
 res2 := result.FromOption(opt, errors.New("not found"))
-```
+````
 
 ### slice: eager in-memory sequences
 
@@ -386,38 +386,42 @@ inventory := map[string]int{
     "apple": 50, "banana": 3, "cherry": 120, "date": 0,
 }
 
-// Of wraps a map into a lazy Seq2
-s := kv.Of(inventory)
-
-// Filter: keep only non-zero stock
-inStock := kv.Filter(s, func(_ string, qty int) bool { return qty > 0 })
-
-// MapValues: apply a discount
-discounted := kv.MapValues(inStock, func(qty int) int { return qty * 9 / 10 })
-
-// Collect: materialise back to a map
-result := kv.Collect(discounted)
+// Fully fluent left-to-right pipeline
+result := kv.Of(inventory).
+    Filter(func(_ string, qty int) bool { return qty > 0 }).   // drop zeros
+    MapValues(func(qty int) int { return qty * 9 / 10 }).       // apply 10% discount
+    ToMap()
 // => map[apple:45 cherry:108]
 
+// Map: transform both key and value at once
+kv.Of(inventory).
+    Map(func(k string, v int) (string, string) {
+        return strings.ToUpper(k), fmt.Sprintf("%d units", v)
+    }).
+    ToMap()
+// => map[APPLE:"50 units" BANANA:"3 units" ...]
+
+// MapValues / MapKeys independently
+kv.Of(inventory).MapValues(func(v int) float64 { return float64(v) * 0.9 }).ToMap()
+kv.Of(inventory).MapKeys(func(k string) string { return strings.ToUpper(k) }).ToMap()
+
 // Keys / Values: extract as seq.Seq
-keys := kv.Keys(s).SortWith(cmp.Compare).ToSlice()
+kv.Of(inventory).Keys().SortWith(cmp.Compare).ToSlice()
 // => [apple banana cherry date]
 
-// MapKeys: transform keys
-upper := kv.Collect(kv.MapKeys(s, strings.ToUpper))
-// => map[APPLE:50 BANANA:3 ...]
-
 // Fold: reduce to a single value
-total := kv.Fold(s, 0, func(acc int, _ string, qty int) int { return acc + qty })
+total := kv.Of(inventory).Fold(0, func(acc int, _ string, qty int) int { return acc + qty })
 // => 173
 
 // ContainsKey: short-circuiting membership test
-kv.ContainsKey(s, "apple") // => true
-kv.ContainsKey(s, "mango") // => false
+kv.Of(inventory).ContainsKey("apple") // => true
+kv.Of(inventory).ContainsKey("mango") // => false
 
 // ToSeq / FromSeq: bridge to seq.Seq[seq.Pair[K,V]]
-pairs := kv.ToSeq(s).Filter(func(p seq.Pair[string, int]) bool { return p.Second > 10 }).ToSlice()
-back  := kv.Collect(kv.FromSeq(seq.OfSlice(pairs)))
+pairs := kv.Of(inventory).ToSeq().
+    Filter(func(p seq.Pair[string, int]) bool { return p.Second > 10 }).
+    ToSlice()
+back := kv.FromSeq(seq.OfSlice(pairs)).ToMap()
 ```
 
 ## Design notes

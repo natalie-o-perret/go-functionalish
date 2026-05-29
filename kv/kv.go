@@ -2,15 +2,15 @@
 // complementing the seq package for map-shaped data.
 //
 // The central type is [Seq2], a named type over iter.Seq2[K,V]. K must be
-// [comparable] so that terminal operations like [Seq2.Collect] and
+// [comparable] so that terminal operations like [Seq2.ToMap] and
 // [Seq2.ContainsKey] can use it as a map key.
 //
 // Pipelines are built by chaining methods left-to-right:
 //
 //	kv.Of(m).
 //	    Filter(func(k string, v int) bool { return v > 0 }).
-//	    MapValues(func(v int) string { return strconv.Itoa(v) }).
-//	    Collect()
+//	    Map(func(k string, v int) (string, string) { return k, strconv.Itoa(v) }).
+//	    ToMap()
 //
 // Generic methods require Go 1.27+.
 package kv
@@ -22,7 +22,7 @@ import (
 )
 
 // Seq2 is a lazy key-value sequence, a named type over iter.Seq2[K,V].
-// K must be comparable so that [Seq2.Collect] and [Seq2.ContainsKey] work.
+// K must be comparable so that [Seq2.ToMap] and [Seq2.ContainsKey] work.
 type Seq2[K comparable, V any] iter.Seq2[K, V]
 
 // ---------------------------------------------------------------------------
@@ -94,6 +94,19 @@ func (s Seq2[K, V]) MapKeys[K2 comparable](fn func(K) K2) Seq2[K2, V] {
 	}
 }
 
+// Map transforms each pair lazily, producing a new Seq2 with different key and
+// value types. fn receives the current key and value and returns the new pair.
+// Duplicate output keys are not resolved.
+func (s Seq2[K, V]) Map[K2 comparable, R any](fn func(K, V) (K2, R)) Seq2[K2, R] {
+	return func(yield func(K2, R) bool) {
+		for k, v := range iter.Seq2[K, V](s) {
+			if !yield(fn(k, v)) {
+				return
+			}
+		}
+	}
+}
+
 // Fold reduces the sequence into a single value using fn, starting from initial.
 func (s Seq2[K, V]) Fold[A any](initial A, fn func(A, K, V) A) A {
 	acc := initial
@@ -140,8 +153,8 @@ func (s Seq2[K, V]) ToSeq() seq.Seq[seq.Pair[K, V]] {
 	}
 }
 
-// Collect materialises the Seq2 into a map. Later pairs overwrite on duplicate keys.
-func (s Seq2[K, V]) Collect() map[K]V {
+// ToMap materialises the Seq2 into a map. Later pairs overwrite on duplicate keys.
+func (s Seq2[K, V]) ToMap() map[K]V {
 	m := make(map[K]V)
 	for k, v := range iter.Seq2[K, V](s) {
 		m[k] = v

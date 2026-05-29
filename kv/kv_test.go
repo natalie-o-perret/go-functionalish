@@ -1,6 +1,7 @@
 package kv_test
 
 import (
+	"fmt"
 	"sort"
 	"testing"
 
@@ -8,9 +9,9 @@ import (
 	"github.com/natalie-o-perret/go-functionalish/seq"
 )
 
-func TestOf_Collect(t *testing.T) {
+func TestOf_ToMap(t *testing.T) {
 	m := map[string]int{"a": 1, "b": 2, "c": 3}
-	got := kv.Of(m).Collect()
+	got := kv.Of(m).ToMap()
 	if len(got) != 3 || got["a"] != 1 || got["b"] != 2 || got["c"] != 3 {
 		t.Fatalf("got %v", got)
 	}
@@ -37,28 +38,37 @@ func TestToSeq_FromSeq(t *testing.T) {
 	if len(pairs) != 2 {
 		t.Fatalf("expected 2 pairs, got %d", len(pairs))
 	}
-	back := kv.FromSeq(seq.OfSlice(pairs)).Collect()
+	back := kv.FromSeq(seq.OfSlice(pairs)).ToMap()
 	if back["p"] != 7 || back["q"] != 8 {
 		t.Fatalf("round-trip failed: %v", back)
 	}
 }
 func TestMapValues(t *testing.T) {
 	m := map[string]int{"a": 1, "b": 2}
-	doubled := kv.Of(m).MapValues(func(v int) int { return v * 2 }).Collect()
+	doubled := kv.Of(m).MapValues(func(v int) int { return v * 2 }).ToMap()
 	if doubled["a"] != 2 || doubled["b"] != 4 {
 		t.Fatalf("got %v", doubled)
 	}
 }
 func TestMapKeys(t *testing.T) {
 	m := map[string]int{"a": 1, "b": 2}
-	upper := kv.Of(m).MapKeys(func(k string) string { return k + k }).Collect()
+	upper := kv.Of(m).MapKeys(func(k string) string { return k + k }).ToMap()
 	if upper["aa"] != 1 || upper["bb"] != 2 {
 		t.Fatalf("got %v", upper)
 	}
 }
+func TestMap(t *testing.T) {
+	m := map[string]int{"a": 1, "b": 2}
+	got := kv.Of(m).Map(func(k string, v int) (string, string) {
+		return k + k, fmt.Sprintf("%d!", v)
+	}).ToMap()
+	if got["aa"] != "1!" || got["bb"] != "2!" {
+		t.Fatalf("got %v", got)
+	}
+}
 func TestFilter(t *testing.T) {
 	m := map[string]int{"a": 1, "b": 2, "c": 3}
-	got := kv.Of(m).Filter(func(_ string, v int) bool { return v > 1 }).Collect()
+	got := kv.Of(m).Filter(func(_ string, v int) bool { return v > 1 }).ToMap()
 	if len(got) != 2 || got["b"] != 2 || got["c"] != 3 {
 		t.Fatalf("got %v", got)
 	}
