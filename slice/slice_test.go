@@ -38,10 +38,28 @@ func TestReplicate(t *testing.T) {
 	}
 }
 
+func TestReplicateNonPositive(t *testing.T) {
+	if got := goslice.Replicate(1, 0); len(got) != 0 {
+		t.Fatalf("Replicate(n=0): expected empty, got %v", got)
+	}
+	if got := goslice.Replicate(1, -3); len(got) != 0 {
+		t.Fatalf("Replicate(n=-3): expected empty, got %v", got)
+	}
+}
+
 func TestInit(t *testing.T) {
 	s := goslice.Init(4, func(i int) int { return i * i })
 	if !eq(s, goslice.Of(0, 1, 4, 9)) {
 		t.Fatal("Init failed")
+	}
+}
+
+func TestInitNonPositive(t *testing.T) {
+	if got := goslice.Init(0, func(i int) int { return i }); len(got) != 0 {
+		t.Fatalf("Init(n=0): expected empty, got %v", got)
+	}
+	if got := goslice.Init(-5, func(i int) int { return i }); len(got) != 0 {
+		t.Fatalf("Init(n=-5): expected empty, got %v", got)
 	}
 }
 
@@ -132,6 +150,21 @@ func TestInsertAt(t *testing.T) {
 	}
 }
 
+func TestInsertAtOutOfRange(t *testing.T) {
+	mustPanic := func(fn func()) {
+		t.Helper()
+		defer func() {
+			if recover() == nil {
+				t.Error("expected panic but none occurred")
+			}
+		}()
+		fn()
+	}
+	s := goslice.Of(1, 2, 3)
+	mustPanic(func() { s.InsertAt(-1, 0) })
+	mustPanic(func() { s.InsertAt(4, 0) })
+}
+
 func TestRemoveAt(t *testing.T) {
 	got := goslice.Of(1, 2, 99, 3).RemoveAt(2)
 	if !eq(got, goslice.Of(1, 2, 3)) {
@@ -139,11 +172,42 @@ func TestRemoveAt(t *testing.T) {
 	}
 }
 
+func TestRemoveAtOutOfRange(t *testing.T) {
+	mustPanic := func(fn func()) {
+		t.Helper()
+		defer func() {
+			if recover() == nil {
+				t.Error("expected panic but none occurred")
+			}
+		}()
+		fn()
+	}
+	s := goslice.Of(1, 2, 3)
+	mustPanic(func() { s.RemoveAt(-1) })
+	mustPanic(func() { s.RemoveAt(3) })
+	mustPanic(func() { goslice.Of[int]().RemoveAt(0) })
+}
+
 func TestUpdateAt(t *testing.T) {
 	got := goslice.Of(1, 2, 0, 4).UpdateAt(2, 3)
 	if !eq(got, goslice.Of(1, 2, 3, 4)) {
 		t.Fatalf("UpdateAt: got %v", got)
 	}
+}
+
+func TestUpdateAtOutOfRange(t *testing.T) {
+	mustPanic := func(fn func()) {
+		t.Helper()
+		defer func() {
+			if recover() == nil {
+				t.Error("expected panic but none occurred")
+			}
+		}()
+		fn()
+	}
+	s := goslice.Of(1, 2, 3)
+	mustPanic(func() { s.UpdateAt(-1, 0) })
+	mustPanic(func() { s.UpdateAt(3, 0) })
 }
 
 // -- terminal / query methods --

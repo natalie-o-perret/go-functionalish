@@ -30,7 +30,11 @@ func Of[T any](items ...T) Slice[T] { return Slice[T](items) }
 func FromSlice[T any](items []T) Slice[T] { return Slice[T](items) }
 
 // Replicate returns a Slice containing v repeated n times.
+// Negative n is treated as 0, returning an empty slice.
 func Replicate[T any](v T, n int) Slice[T] {
+	if n <= 0 {
+		return Slice[T]{}
+	}
 	s := make(Slice[T], n)
 	for i := range n {
 		s[i] = v
@@ -39,7 +43,11 @@ func Replicate[T any](v T, n int) Slice[T] {
 }
 
 // Init returns a Slice of length n where element i is fn(i).
+// Negative n is treated as 0, returning an empty slice.
 func Init[T any](n int, fn func(int) T) Slice[T] {
+	if n <= 0 {
+		return Slice[T]{}
+	}
 	s := make(Slice[T], n)
 	for i := range n {
 		s[i] = fn(i)
@@ -136,7 +144,11 @@ func (s Slice[T]) SortWith(cmpFn func(a, b T) int) Slice[T] {
 func (s Slice[T]) Tail() Slice[T] { return s.Skip(1) }
 
 // InsertAt returns a new Slice with v inserted before index.
+// Panics if index is out of range [0, len(s)].
 func (s Slice[T]) InsertAt(index int, v T) Slice[T] {
+	if index < 0 || index > len(s) {
+		panic("slice.InsertAt: index out of range")
+	}
 	out := make(Slice[T], len(s)+1)
 	copy(out, s[:index])
 	out[index] = v
@@ -145,7 +157,11 @@ func (s Slice[T]) InsertAt(index int, v T) Slice[T] {
 }
 
 // RemoveAt returns a new Slice with the element at index removed.
+// Panics if index is out of range [0, len(s)-1].
 func (s Slice[T]) RemoveAt(index int) Slice[T] {
+	if index < 0 || index >= len(s) {
+		panic("slice.RemoveAt: index out of range")
+	}
 	out := make(Slice[T], len(s)-1)
 	copy(out, s[:index])
 	copy(out[index:], s[index+1:])
@@ -153,7 +169,11 @@ func (s Slice[T]) RemoveAt(index int) Slice[T] {
 }
 
 // UpdateAt returns a new Slice with the element at index replaced by v.
+// Panics if index is out of range [0, len(s)-1].
 func (s Slice[T]) UpdateAt(index int, v T) Slice[T] {
+	if index < 0 || index >= len(s) {
+		panic("slice.UpdateAt: index out of range")
+	}
 	out := slices.Clone([]T(s))
 	out[index] = v
 	return Slice[T](out)
