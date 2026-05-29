@@ -73,7 +73,11 @@ func (s Slice[T]) Append(items ...T) Slice[T] {
 }
 
 // Truncate returns the first n elements (or the whole slice if n >= len).
+// Negative n is treated as 0, returning an empty slice.
 func (s Slice[T]) Truncate(n int) Slice[T] {
+	if n <= 0 {
+		return Slice[T]{}
+	}
 	if n >= len(s) {
 		return slices.Clone([]T(s))
 	}
@@ -81,7 +85,11 @@ func (s Slice[T]) Truncate(n int) Slice[T] {
 }
 
 // Skip returns a new Slice with the first n elements dropped.
+// Negative n is treated as 0, returning a clone of the full slice.
 func (s Slice[T]) Skip(n int) Slice[T] {
+	if n <= 0 {
+		return slices.Clone([]T(s))
+	}
 	if n >= len(s) {
 		return Slice[T]{}
 	}

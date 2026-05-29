@@ -75,6 +75,9 @@ func TestTruncate(t *testing.T) {
 	if !eq(goslice.Of(1, 2).Truncate(10), goslice.Of(1, 2)) {
 		t.Fatal("Truncate beyond bounds")
 	}
+	if !eq(goslice.Of(1, 2).Truncate(-1), goslice.Of[int]()) {
+		t.Fatal("Truncate negative n")
+	}
 }
 
 func TestSkip(t *testing.T) {
@@ -83,6 +86,9 @@ func TestSkip(t *testing.T) {
 	}
 	if !eq(goslice.Of(1, 2).Skip(5), goslice.Of[int]()) {
 		t.Fatal("Skip beyond bounds")
+	}
+	if !eq(goslice.Of(1, 2, 3).Skip(-1), goslice.Of(1, 2, 3)) {
+		t.Fatal("Skip negative n")
 	}
 }
 

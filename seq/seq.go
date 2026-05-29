@@ -3,8 +3,9 @@
 // runs until a terminal method (ToSlice, Head, Length, ...) is called.
 //
 // Generic methods (Go 1.27+) allow type-changing operations such as Map,
-// Collect, Choose, Fold, Zip, GroupBy, and SortBy to be called directly on
+// Collect, Choose, Fold, GroupBy, and SortBy to be called directly on
 // a Seq value, enabling fully fluent left-to-right pipelines:
+// (Zip remains a package-level function due to a type-checker instantiation cycle.)
 //
 //	seq.OfSlice(items).
 //	    Filter(isActive).
