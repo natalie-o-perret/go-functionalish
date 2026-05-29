@@ -185,3 +185,15 @@ func ToSliceFn[T any]() func(Seq[T]) []T {
 func LengthFn[T any]() func(Seq[T]) int {
 	return func(s Seq[T]) int { return s.Length() }
 }
+
+// ZipWithFn returns a transform: Seq[T] => Seq[R], combining with other using fn.
+// Prefer s.ZipWith(other, fn) for direct chaining; use ZipWithFn when a function value is required.
+func ZipWithFn[T, U, R any](other Seq[U], fn func(T, U) R) func(Seq[T]) Seq[R] {
+	return func(s Seq[T]) Seq[R] { return s.ZipWith(other, fn) }
+}
+
+// ZipWith3Fn returns a transform: Seq[T] => Seq[R], combining with b and c using fn.
+// Prefer s.ZipWith3(b, c, fn) for direct chaining; use ZipWith3Fn when a function value is required.
+func ZipWith3Fn[T, U, V, R any](b Seq[U], c Seq[V], fn func(T, U, V) R) func(Seq[T]) Seq[R] {
+	return func(s Seq[T]) Seq[R] { return s.ZipWith3(b, c, fn) }
+}

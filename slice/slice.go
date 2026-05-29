@@ -451,6 +451,26 @@ func (s Slice[T]) MapFold[S, R any](initial S, fn func(S, T) (R, S)) (Slice[R], 
 
 // -- package-level functions (constraints prevent methods) ----------------------
 
+// ZipWith combines elements from s and other pairwise using fn. Stops at the shorter slice.
+func (s Slice[T]) ZipWith[U, R any](other Slice[U], fn func(T, U) R) Slice[R] {
+	n := min(len(s), len(other))
+	out := make(Slice[R], n)
+	for i := range n {
+		out[i] = fn(s[i], other[i])
+	}
+	return out
+}
+
+// ZipWith3 combines elements from s, b, and c element-wise using fn. Stops at the shortest slice.
+func (s Slice[T]) ZipWith3[U, V, R any](b Slice[U], c Slice[V], fn func(T, U, V) R) Slice[R] {
+	n := min(len(s), len(b), len(c))
+	out := make(Slice[R], n)
+	for i := range n {
+		out[i] = fn(s[i], b[i], c[i])
+	}
+	return out
+}
+
 // Zip pairs corresponding elements from a and b. Stops at the shorter slice.
 //
 // Note: Zip cannot be a method because returning Slice[option.Pair[T,U]] from a

@@ -1,6 +1,7 @@
 package slice_test
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 	"testing"
@@ -520,5 +521,35 @@ func TestFluentPipeline(t *testing.T) {
 
 	if !eq(names, goslice.Of("dave", "alice", "carol")) {
 		t.Fatalf("fluent pipeline: got %v", names)
+	}
+}
+
+func TestZipWith(t *testing.T) {
+	a := goslice.Of(1, 2, 3)
+	b := goslice.Of("a", "b", "c")
+	got := a.ZipWith(b, func(n int, s string) string { return fmt.Sprintf("%d%s", n, s) })
+	want := goslice.Of("1a", "2b", "3c")
+	if !eq(got, want) {
+		t.Fatalf("ZipWith: got %v", got)
+	}
+	// stops at shorter
+	short := goslice.Of(1, 2).ZipWith(goslice.Of("x", "y", "z"), func(n int, s string) string { return s })
+	if len(short) != 2 {
+		t.Fatalf("ZipWith truncation: len %d", len(short))
+	}
+}
+
+func TestZipWith3(t *testing.T) {
+	a := goslice.Of(1, 2)
+	b := goslice.Of(10, 20)
+	c := goslice.Of(100, 200)
+	got := a.ZipWith3(b, c, func(x, y, z int) int { return x + y + z })
+	if !eq(got, goslice.Of(111, 222)) {
+		t.Fatalf("ZipWith3: got %v", got)
+	}
+	// stops at shortest
+	short := goslice.Of(1, 2, 3).ZipWith3(goslice.Of(10, 20), goslice.Of(100, 200, 300), func(x, y, z int) int { return x + y + z })
+	if len(short) != 2 {
+		t.Fatalf("ZipWith3 truncation: len %d", len(short))
 	}
 }

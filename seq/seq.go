@@ -435,6 +435,46 @@ func DistinctBy[T any, K comparable](s Seq[T], key func(T) K) Seq[T] {
 type Pair[T, U any] = option.Pair[T, U]
 
 // Zip lazily pairs elements from two Seqs. Stops at the shorter one.
+// ZipWith lazily combines s and other element-wise using fn. Stops at the shorter Seq.
+func (s Seq[T]) ZipWith[U, R any](other Seq[U], fn func(T, U) R) Seq[R] {
+	return func(yield func(R) bool) {
+		nextU, stopU := iter.Pull(iter.Seq[U](other))
+		defer stopU()
+		for v := range s {
+			u, ok := nextU()
+			if !ok {
+				return
+			}
+			if !yield(fn(v, u)) {
+				return
+			}
+		}
+	}
+}
+
+// ZipWith3 lazily combines s, b, and c element-wise using fn. Stops at the shortest Seq.
+func (s Seq[T]) ZipWith3[U, V, R any](b Seq[U], c Seq[V], fn func(T, U, V) R) Seq[R] {
+	return func(yield func(R) bool) {
+		nextU, stopU := iter.Pull(iter.Seq[U](b))
+		defer stopU()
+		nextV, stopV := iter.Pull(iter.Seq[V](c))
+		defer stopV()
+		for v := range s {
+			u, okU := nextU()
+			if !okU {
+				return
+			}
+			w, okV := nextV()
+			if !okV {
+				return
+			}
+			if !yield(fn(v, u, w)) {
+				return
+			}
+		}
+	}
+}
+
 // Note: Zip cannot be a method because returning Seq[Pair[T,U]] would create
 // an instantiation cycle in the type checker (Go spec §Generic methods).
 func Zip[T, U any](a Seq[T], b Seq[U]) Seq[Pair[T, U]] {

@@ -468,3 +468,17 @@ func TestOfResult(t *testing.T) {
 	assertSlice(t, seq.OfResult(result.Ok[int, string](42)).ToSlice(), []int{42})
 	assertSlice(t, seq.OfResult(result.Err[int, string]("e")).ToSlice(), []int{})
 }
+
+func TestZipWith3(t *testing.T) {
+	got := seq.OfSlice([]int{1, 2}).
+		ZipWith3(seq.OfSlice([]int{10, 20}), seq.OfSlice([]int{100, 200}), func(a, b, c int) int { return a + b + c }).
+		ToSlice()
+	assertSlice(t, got, []int{111, 222})
+	// stops at shortest
+	short := seq.OfSlice([]int{1, 2, 3}).
+		ZipWith3(seq.OfSlice([]int{10, 20}), seq.OfSlice([]int{100, 200, 300}), func(a, b, c int) int { return a + b + c }).
+		ToSlice()
+	if len(short) != 2 {
+		t.Fatalf("ZipWith3 truncation: len %d", len(short))
+	}
+}

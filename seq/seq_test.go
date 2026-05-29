@@ -2,6 +2,7 @@ package seq_test
 
 import (
 	"cmp"
+	"fmt"
 	"testing"
 
 	"github.com/natalie-o-perret/go-functionalish/seq"
@@ -135,5 +136,25 @@ func TestSortWith(t *testing.T) {
 		if v != i+1 {
 			t.Fatalf("pos %d: got %d", i, v)
 		}
+	}
+}
+
+func TestZipWith(t *testing.T) {
+	got := seq.OfSlice([]int{1, 2, 3}).
+		ZipWith(seq.OfSlice([]string{"a", "b", "c"}), func(n int, s string) string {
+			return fmt.Sprintf("%d%s", n, s)
+		}).ToSlice()
+	want := []string{"1a", "2b", "3c"}
+	for i, v := range got {
+		if v != want[i] {
+			t.Fatalf("ZipWith[%d]: got %q want %q", i, v, want[i])
+		}
+	}
+	// stops at shorter
+	short := seq.OfSlice([]int{1, 2}).
+		ZipWith(seq.OfSlice([]string{"x", "y", "z"}), func(n int, s string) string { return s }).
+		ToSlice()
+	if len(short) != 2 {
+		t.Fatalf("ZipWith truncation: len %d", len(short))
 	}
 }
