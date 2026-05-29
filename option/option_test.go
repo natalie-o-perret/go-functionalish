@@ -1,6 +1,7 @@
 package option_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -151,5 +152,25 @@ func TestTeeNone(t *testing.T) {
 	out2 := option.TeeNone(option.Some(1), func() { called = true })
 	if called || out2.UnwrapOr(0) != 1 {
 		t.Fatal("TeeNone should not call fn on Some")
+	}
+}
+
+func TestZipWith(t *testing.T) {
+	// both Some
+	got := option.Some(3).ZipWith(option.Some("px"), func(n int, s string) string {
+		return fmt.Sprintf("%d%s", n, s)
+	})
+	if !got.IsSome() || got.Unwrap() != "3px" {
+		t.Fatalf("ZipWith Some+Some: got %v", got)
+	}
+	// first is None
+	none := option.None[int]().ZipWith(option.Some("px"), func(n int, s string) string { return s })
+	if !none.IsNone() {
+		t.Fatal("ZipWith None+Some should be None")
+	}
+	// second is None
+	none2 := option.Some(3).ZipWith(option.None[string](), func(n int, s string) string { return s })
+	if !none2.IsNone() {
+		t.Fatal("ZipWith Some+None should be None")
 	}
 }

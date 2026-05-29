@@ -79,8 +79,50 @@ func (o Option[T]) Bind[R any](fn func(T) Option[R]) Option[R] {
 	return None[R]()
 }
 
-// -- type-transforming package-level functions ---------------------------------
-// Kept for backward compatibility. Prefer the method forms: o.Map(fn), o.Bind(fn).
+// OrElse returns o if Some, otherwise calls fn and returns its result.
+func (o Option[T]) OrElse(fn func() Option[T]) Option[T] {
+	if o.valid {
+		return o
+	}
+	return fn()
+}
+
+// DefaultWith returns the value if Some, otherwise calls fn lazily.
+// Unlike UnwrapOr, the default is only computed if needed.
+func (o Option[T]) DefaultWith(fn func() T) T {
+	if o.valid {
+		return o.value
+	}
+	return fn()
+}
+
+// Tee calls fn with the value if Some, returning o unchanged.
+// Useful for logging or side effects in a pipeline.
+func (o Option[T]) Tee(fn func(T)) Option[T] {
+	if o.valid {
+		fn(o.value)
+	}
+	return o
+}
+
+// TeeNone calls fn if None, returning o unchanged.
+// Useful for logging or side effects on the absent path.
+func (o Option[T]) TeeNone(fn func()) Option[T] {
+	if !o.valid {
+		fn()
+	}
+	return o
+}
+
+// ZipWith combines o with other using fn. Returns None if either is None.
+func (o Option[T]) ZipWith[U, R any](other Option[U], fn func(T, U) R) Option[R] {
+	if o.valid && other.valid {
+		return Some(fn(o.value, other.value))
+	}
+	return None[R]()
+}
+
+// -- package-level functions (constraints or receiver issues prevent methods) ---
 
 // Map applies fn to the value inside Some, returning None unchanged.
 //
@@ -96,6 +138,34 @@ func Bind[T, R any](o Option[T], fn func(T) Option[R]) Option[R] {
 	return o.Bind(fn)
 }
 
+// OrElse returns o if Some, otherwise calls fn and returns its result.
+//
+// Deprecated: use o.OrElse(fn) for a fluent, chainable style.
+func OrElse[T any](o Option[T], fn func() Option[T]) Option[T] {
+	return o.OrElse(fn)
+}
+
+// DefaultWith returns the value if Some, otherwise calls fn lazily.
+//
+// Deprecated: use o.DefaultWith(fn) for a fluent, chainable style.
+func DefaultWith[T any](o Option[T], fn func() T) T {
+	return o.DefaultWith(fn)
+}
+
+// Tee calls fn with the value if Some, returning o unchanged.
+//
+// Deprecated: use o.Tee(fn) for a fluent, chainable style.
+func Tee[T any](o Option[T], fn func(T)) Option[T] {
+	return o.Tee(fn)
+}
+
+// TeeNone calls fn if None, returning o unchanged.
+//
+// Deprecated: use o.TeeNone(fn) for a fluent, chainable style.
+func TeeNone[T any](o Option[T], fn func()) Option[T] {
+	return o.TeeNone(fn)
+}
+
 // Zip combines two Options into an Option of a pair. None if either is None.
 // Note: Zip cannot be a method because returning Option[Pair[T,U]] would create
 // an instantiation cycle in the type checker.
@@ -107,14 +177,15 @@ func Zip[T, U any](a Option[T], b Option[U]) Option[Pair[T, U]] {
 }
 
 // Map2 applies fn to the values of two Options. Returns None if either is None.
+//
+// Deprecated: use a.ZipWith(b, fn) for a fluent, chainable style.
 func Map2[A, B, C any](a Option[A], b Option[B], fn func(A, B) C) Option[C] {
-	if a.valid && b.valid {
-		return Some(fn(a.value, b.value))
-	}
-	return None[C]()
+	return a.ZipWith(b, fn)
 }
 
 // Flatten unwraps a nested Option[Option[T]] into Option[T].
+// Note: Flatten cannot be a method because the receiver would need to be Option[Option[T]],
+// which cannot be expressed in Go's type system.
 func Flatten[T any](o Option[Option[T]]) Option[T] {
 	if o.valid {
 		return o.value
@@ -122,44 +193,11 @@ func Flatten[T any](o Option[Option[T]]) Option[T] {
 	return None[T]()
 }
 
-// OrElse returns o if Some, otherwise calls fn and returns its result.
-func OrElse[T any](o Option[T], fn func() Option[T]) Option[T] {
-	if o.valid {
-		return o
-	}
-	return fn()
-}
-
 // Contains reports whether o is Some and its value equals v.
+// Note: Contains cannot be a method because Option[T] uses the unconstrained T any;
+// the comparable constraint required here cannot be added on the method alone.
 func Contains[T comparable](o Option[T], v T) bool {
 	return o.valid && o.value == v
-}
-
-// DefaultWith returns the value if Some, otherwise calls fn lazily.
-// Unlike UnwrapOr, the default is only computed if needed.
-func DefaultWith[T any](o Option[T], fn func() T) T {
-	if o.valid {
-		return o.value
-	}
-	return fn()
-}
-
-// Tee calls fn with the value if Some, returning o unchanged.
-// Useful for logging or side effects in a pipeline.
-func Tee[T any](o Option[T], fn func(T)) Option[T] {
-	if o.valid {
-		fn(o.value)
-	}
-	return o
-}
-
-// TeeNone calls fn if None, returning o unchanged.
-// Useful for logging or side effects on the absent path.
-func TeeNone[T any](o Option[T], fn func()) Option[T] {
-	if !o.valid {
-		fn()
-	}
-	return o
 }
 
 // Pair holds two values of potentially different types.

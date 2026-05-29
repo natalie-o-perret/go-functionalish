@@ -790,3 +790,23 @@ func TestTraverse(t *testing.T) {
 		t.Fatal("expected Err(bad input)")
 	}
 }
+
+func TestZipWith(t *testing.T) {
+	// both Ok
+	got := result.Ok[int, string](3).ZipWith(result.Ok[string, string]("px"), func(n int, s string) string {
+		return fmt.Sprintf("%d%s", n, s)
+	})
+	if !got.IsOk() || got.Unwrap() != "3px" {
+		t.Fatalf("ZipWith Ok+Ok: got %v", got)
+	}
+	// first Err
+	e1 := result.Err[int, string]("e1").ZipWith(result.Ok[string, string]("px"), func(n int, s string) string { return s })
+	if !e1.IsErr() || e1.UnwrapErr() != "e1" {
+		t.Fatalf("ZipWith Err+Ok: got %v", e1)
+	}
+	// second Err
+	e2 := result.Ok[int, string](3).ZipWith(result.Err[string, string]("e2"), func(n int, s string) string { return s })
+	if !e2.IsErr() || e2.UnwrapErr() != "e2" {
+		t.Fatalf("ZipWith Ok+Err: got %v", e2)
+	}
+}

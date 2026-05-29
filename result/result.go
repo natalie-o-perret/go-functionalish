@@ -99,8 +99,43 @@ func (r Result[T, E]) Bind[U any](fn func(T) Result[U, E]) Result[U, E] {
 	return Err[U, E](r.err)
 }
 
-// -- type-transforming package-level functions ---------------------------------
-// Kept for backward compatibility. Prefer the method forms: r.Map(fn), r.Bind(fn), r.MapErr(fn).
+// OrElse returns r if Ok, otherwise calls fn with the error to produce a fallback Result.
+func (r Result[T, E]) OrElse(fn func(E) Result[T, E]) Result[T, E] {
+	if r.ok {
+		return r
+	}
+	return fn(r.err)
+}
+
+// Tee calls fn with the Ok value as a side effect and returns r unchanged.
+// Useful for logging or metrics in a pipeline without breaking the chain.
+func (r Result[T, E]) Tee(fn func(T)) Result[T, E] {
+	if r.ok {
+		fn(r.value)
+	}
+	return r
+}
+
+// TeeErr calls fn with the Err value as a side effect and returns r unchanged.
+func (r Result[T, E]) TeeErr(fn func(E)) Result[T, E] {
+	if !r.ok {
+		fn(r.err)
+	}
+	return r
+}
+
+// ZipWith combines r with other using fn. Short-circuits on the first Err.
+func (r Result[T, E]) ZipWith[U, R any](other Result[U, E], fn func(T, U) R) Result[R, E] {
+	if r.ok && other.ok {
+		return Ok[R, E](fn(r.value, other.value))
+	}
+	if !r.ok {
+		return Err[R, E](r.err)
+	}
+	return Err[R, E](other.err)
+}
+
+// -- package-level functions (constraints or receiver issues prevent methods) ---
 
 // Map applies fn to the Ok value, passing Err unchanged.
 //
@@ -123,6 +158,34 @@ func Bind[T, U, E any](r Result[T, E], fn func(T) Result[U, E]) Result[U, E] {
 	return r.Bind(fn)
 }
 
+// OrElse returns r if Ok, otherwise calls fn with the error to produce a fallback Result.
+//
+// Deprecated: use r.OrElse(fn) for a fluent, chainable style.
+func OrElse[T, E any](r Result[T, E], fn func(E) Result[T, E]) Result[T, E] {
+	return r.OrElse(fn)
+}
+
+// Tee calls fn with the Ok value as a side effect and returns r unchanged.
+//
+// Deprecated: use r.Tee(fn) for a fluent, chainable style.
+func Tee[T, E any](r Result[T, E], fn func(T)) Result[T, E] {
+	return r.Tee(fn)
+}
+
+// TeeErr calls fn with the Err value as a side effect and returns r unchanged.
+//
+// Deprecated: use r.TeeErr(fn) for a fluent, chainable style.
+func TeeErr[T, E any](r Result[T, E], fn func(E)) Result[T, E] {
+	return r.TeeErr(fn)
+}
+
+// Map2 combines two Results with fn. Short-circuits on the first Err.
+//
+// Deprecated: use ra.ZipWith(rb, fn) for a fluent, chainable style.
+func Map2[A, B, R, E any](ra Result[A, E], rb Result[B, E], fn func(A, B) R) Result[R, E] {
+	return ra.ZipWith(rb, fn)
+}
+
 // FromOption converts Some to Ok and None to Err using the provided error.
 func FromOption[T, E any](o option.Option[T], errIfNone E) Result[T, E] {
 	if o.IsSome() {
@@ -133,6 +196,8 @@ func FromOption[T, E any](o option.Option[T], errIfNone E) Result[T, E] {
 
 // Zip combines two Results into a Result of a pair.
 // Returns the first Err encountered if either is Err.
+// Note: Zip cannot be a method because returning Result[Pair[T,U],E] would create
+// an instantiation cycle in the type checker.
 func Zip[T, U, E any](a Result[T, E], b Result[U, E]) Result[option.Pair[T, U], E] {
 	if a.ok && b.ok {
 		return Ok[option.Pair[T, U], E](option.Pair[T, U]{First: a.value, Second: b.value})
@@ -144,6 +209,8 @@ func Zip[T, U, E any](a Result[T, E], b Result[U, E]) Result[option.Pair[T, U], 
 }
 
 // Flatten unwraps a nested Result[Result[T,E],E] into Result[T,E].
+// Note: Flatten cannot be a method because the receiver would need to be Result[Result[T,E],E],
+// which cannot be expressed in Go's type system.
 func Flatten[T, E any](r Result[Result[T, E], E]) Result[T, E] {
 	if r.ok {
 		return r.value
@@ -151,43 +218,9 @@ func Flatten[T, E any](r Result[Result[T, E], E]) Result[T, E] {
 	return Err[T, E](r.err)
 }
 
-// OrElse returns r if Ok, otherwise calls fn with the error to produce a fallback Result.
-func OrElse[T, E any](r Result[T, E], fn func(E) Result[T, E]) Result[T, E] {
-	if r.ok {
-		return r
-	}
-	return fn(r.err)
-}
-
-// Tee calls fn with the Ok value as a side effect and returns r unchanged.
-// Useful for logging or metrics in a pipeline without breaking the chain.
-func Tee[T, E any](r Result[T, E], fn func(T)) Result[T, E] {
-	if r.ok {
-		fn(r.value)
-	}
-	return r
-}
-
-// TeeErr calls fn with the Err value as a side effect and returns r unchanged.
-func TeeErr[T, E any](r Result[T, E], fn func(E)) Result[T, E] {
-	if !r.ok {
-		fn(r.err)
-	}
-	return r
-}
-
-// Map2 combines two Results with fn. Short-circuits on the first Err.
-func Map2[A, B, R, E any](ra Result[A, E], rb Result[B, E], fn func(A, B) R) Result[R, E] {
-	if ra.ok && rb.ok {
-		return Ok[R, E](fn(ra.value, rb.value))
-	}
-	if !ra.ok {
-		return Err[R, E](ra.err)
-	}
-	return Err[R, E](rb.err)
-}
-
 // Contains reports whether r is Ok and its value equals v.
+// Note: Contains cannot be a method because Result[T,E] uses T any;
+// the comparable constraint required here cannot be added on the method alone.
 func Contains[T comparable, E any](r Result[T, E], v T) bool {
 	return r.ok && r.value == v
 }
