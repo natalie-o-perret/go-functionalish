@@ -135,56 +135,7 @@ func (r Result[T, E]) ZipWith[U, R any](other Result[U, E], fn func(T, U) R) Res
 	return Err[R, E](other.err)
 }
 
-// -- package-level functions (constraints or receiver issues prevent methods) ---
-
-// Map applies fn to the Ok value, passing Err unchanged.
-//
-// Deprecated: use r.Map(fn) for a fluent, chainable style.
-func Map[T, U, E any](r Result[T, E], fn func(T) U) Result[U, E] {
-	return r.Map(fn)
-}
-
-// MapErr applies fn to the Err value, passing Ok unchanged.
-//
-// Deprecated: use r.MapErr(fn) for a fluent, chainable style.
-func MapErr[T, E, F any](r Result[T, E], fn func(E) F) Result[T, F] {
-	return r.MapErr(fn)
-}
-
-// Bind applies fn to the Ok value, flattening the resulting Result.
-//
-// Deprecated: use r.Bind(fn) for a fluent, chainable style.
-func Bind[T, U, E any](r Result[T, E], fn func(T) Result[U, E]) Result[U, E] {
-	return r.Bind(fn)
-}
-
-// OrElse returns r if Ok, otherwise calls fn with the error to produce a fallback Result.
-//
-// Deprecated: use r.OrElse(fn) for a fluent, chainable style.
-func OrElse[T, E any](r Result[T, E], fn func(E) Result[T, E]) Result[T, E] {
-	return r.OrElse(fn)
-}
-
-// Tee calls fn with the Ok value as a side effect and returns r unchanged.
-//
-// Deprecated: use r.Tee(fn) for a fluent, chainable style.
-func Tee[T, E any](r Result[T, E], fn func(T)) Result[T, E] {
-	return r.Tee(fn)
-}
-
-// TeeErr calls fn with the Err value as a side effect and returns r unchanged.
-//
-// Deprecated: use r.TeeErr(fn) for a fluent, chainable style.
-func TeeErr[T, E any](r Result[T, E], fn func(E)) Result[T, E] {
-	return r.TeeErr(fn)
-}
-
-// Map2 combines two Results with fn. Short-circuits on the first Err.
-//
-// Deprecated: use ra.ZipWith(rb, fn) for a fluent, chainable style.
-func Map2[A, B, R, E any](ra Result[A, E], rb Result[B, E], fn func(A, B) R) Result[R, E] {
-	return ra.ZipWith(rb, fn)
-}
+// -- package-level functions (only where methods are impossible) ---------------
 
 // FromOption converts Some to Ok and None to Err using the provided error.
 func FromOption[T, E any](o option.Option[T], errIfNone E) Result[T, E] {

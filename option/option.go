@@ -122,49 +122,7 @@ func (o Option[T]) ZipWith[U, R any](other Option[U], fn func(T, U) R) Option[R]
 	return None[R]()
 }
 
-// -- package-level functions (constraints or receiver issues prevent methods) ---
-
-// Map applies fn to the value inside Some, returning None unchanged.
-//
-// Deprecated: use o.Map(fn) for a fluent, chainable style.
-func Map[T, R any](o Option[T], fn func(T) R) Option[R] {
-	return o.Map(fn)
-}
-
-// Bind applies fn to the value inside Some, flattening the resulting Option.
-//
-// Deprecated: use o.Bind(fn) for a fluent, chainable style.
-func Bind[T, R any](o Option[T], fn func(T) Option[R]) Option[R] {
-	return o.Bind(fn)
-}
-
-// OrElse returns o if Some, otherwise calls fn and returns its result.
-//
-// Deprecated: use o.OrElse(fn) for a fluent, chainable style.
-func OrElse[T any](o Option[T], fn func() Option[T]) Option[T] {
-	return o.OrElse(fn)
-}
-
-// DefaultWith returns the value if Some, otherwise calls fn lazily.
-//
-// Deprecated: use o.DefaultWith(fn) for a fluent, chainable style.
-func DefaultWith[T any](o Option[T], fn func() T) T {
-	return o.DefaultWith(fn)
-}
-
-// Tee calls fn with the value if Some, returning o unchanged.
-//
-// Deprecated: use o.Tee(fn) for a fluent, chainable style.
-func Tee[T any](o Option[T], fn func(T)) Option[T] {
-	return o.Tee(fn)
-}
-
-// TeeNone calls fn if None, returning o unchanged.
-//
-// Deprecated: use o.TeeNone(fn) for a fluent, chainable style.
-func TeeNone[T any](o Option[T], fn func()) Option[T] {
-	return o.TeeNone(fn)
-}
+// -- package-level functions (only where methods are impossible) ---------------
 
 // Zip combines two Options into an Option of a pair. None if either is None.
 // Note: Zip cannot be a method because returning Option[Pair[T,U]] would create
@@ -174,13 +132,6 @@ func Zip[T, U any](a Option[T], b Option[U]) Option[Pair[T, U]] {
 		return Some(Pair[T, U]{First: a.value, Second: b.value})
 	}
 	return None[Pair[T, U]]()
-}
-
-// Map2 applies fn to the values of two Options. Returns None if either is None.
-//
-// Deprecated: use a.ZipWith(b, fn) for a fluent, chainable style.
-func Map2[A, B, C any](a Option[A], b Option[B], fn func(A, B) C) Option[C] {
-	return a.ZipWith(b, fn)
 }
 
 // Flatten unwraps a nested Option[Option[T]] into Option[T].

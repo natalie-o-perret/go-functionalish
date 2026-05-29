@@ -9,20 +9,20 @@ import (
 
 func ExampleSome() {
 	name := option.Some("alice")
-	upper := option.Map(name, strings.ToUpper)
+	upper := name.Map(strings.ToUpper)
 	fmt.Println(upper.UnwrapOr("?"))
 	// Output: ALICE
 }
 
 func ExampleNone() {
 	none := option.None[string]()
-	upper := option.Map(none, strings.ToUpper)
+	upper := none.Map(strings.ToUpper)
 	fmt.Println(upper.UnwrapOr("none"))
 	// Output: none
 }
 
-func ExampleMap() {
-	result := option.Map(option.Some(21), func(n int) int { return n * 2 })
-	fmt.Println(result.UnwrapOr(0))
+func ExampleOption_Map() {
+	res := option.Some(21).Map(func(n int) int { return n * 2 })
+	fmt.Println(res.UnwrapOr(0))
 	// Output: 42
 }

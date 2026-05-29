@@ -10,7 +10,7 @@ No reflection. No `interface{}`. Pure generics, lazy by default, and fully
 fluent pipelines via Go 1.27 generic methods.
 
 > [!NOTE]
-> Unapologetically vibe-coded with Claude Opus 4.6.
+> Unapologetically vibe-coded with GitHub Copilot & Claude Sonnet 4.6.
 >
 > Unapologetically not "idiomatic Go."
 >

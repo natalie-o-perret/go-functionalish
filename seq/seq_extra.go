@@ -351,16 +351,9 @@ func (s Seq[T]) MapFold[S, R any](initial S, fn func(S, T) (R, S)) ([]R, S) {
 
 // -- additional type-transforming package-level functions -----------------------
 
-// Mapi transforms Seq[T] => Seq[R] lazily, providing the index to fn.
-//
-// Deprecated: use s.Mapi(fn) for a fluent, chainable style.
-func Mapi[T, R any](s Seq[T], fn func(int, T) R) Seq[R] {
-	return s.Mapi(fn)
-}
-
 // Indexed pairs each element with its zero-based index.
 func Indexed[T any](s Seq[T]) Seq[Pair[int, T]] {
-	return Mapi(s, func(i int, v T) Pair[int, T] {
+	return s.Mapi(func(i int, v T) Pair[int, T] {
 		return Pair[int, T]{First: i, Second: v}
 	})
 }
@@ -448,27 +441,6 @@ func SplitInto[T any](s Seq[T], count int) Seq[[]T] {
 			offset += sz
 		}
 	}
-}
-
-// Scan is like Fold but yields each intermediate accumulator value, starting with initial.
-//
-// Deprecated: use s.Scan(initial, fn) for a fluent, chainable style.
-func Scan[T, S any](s Seq[T], initial S, fn func(S, T) S) Seq[S] {
-	return s.Scan(initial, fn)
-}
-
-// ScanBack is like FoldBack but yields each intermediate accumulator value. Materialises.
-//
-// Deprecated: use s.ScanBack(initial, fn) for a fluent, chainable style.
-func ScanBack[T, S any](s Seq[T], initial S, fn func(T, S) S) Seq[S] {
-	return s.ScanBack(initial, fn)
-}
-
-// TryPick applies fn to each element, returning the first Some result. Short-circuits.
-//
-// Deprecated: use s.TryPick(fn) for a fluent, chainable style.
-func TryPick[T, R any](s Seq[T], fn func(T) option.Option[R]) option.Option[R] {
-	return s.TryPick(fn)
 }
 
 // Contains returns true if the sequence contains the given value. Short-circuits.
@@ -742,13 +714,6 @@ func CompareWith[T any](a, b Seq[T], cmpFn func(T, T) int) int {
 	return 0
 }
 
-// FoldBack folds from the right with an accumulator. Materialises.
-//
-// Deprecated: use s.FoldBack(initial, fn) for a fluent, chainable style.
-func FoldBack[T, S any](s Seq[T], initial S, fn func(T, S) S) S {
-	return s.FoldBack(initial, fn)
-}
-
 // Transpose transposes a Seq of Seqs (rows to columns). Materialises.
 func Transpose[T any](s Seq[Seq[T]]) Seq[Seq[T]] {
 	var rows [][]T
@@ -780,14 +745,6 @@ func Transpose[T any](s Seq[Seq[T]]) Seq[Seq[T]] {
 			}
 		}
 	}
-}
-
-// MapFold combines map and fold in one pass. Materialises.
-// Returns the mapped results as a slice and the final state.
-//
-// Deprecated: use s.MapFold(initial, fn) for a fluent, chainable style.
-func MapFold[S, T, R any](s Seq[T], initial S, fn func(S, T) (R, S)) ([]R, S) {
-	return s.MapFold(initial, fn)
 }
 
 // -- additional constructors ---------------------------------------------------

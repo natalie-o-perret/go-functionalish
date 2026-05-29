@@ -80,7 +80,7 @@ func TestCycle(t *testing.T) {
 }
 
 func TestSortBy(t *testing.T) {
-	got := seq.SortBy(seq.OfSlice([]int{3, 1, 2}), func(n int) int { return n }).ToSlice()
+	got := seq.OfSlice([]int{3, 1, 2}).SortBy(func(n int) int { return n }).ToSlice()
 	for i, v := range got {
 		if v != i+1 {
 			t.Fatalf("pos %d: got %d", i, v)
@@ -89,7 +89,7 @@ func TestSortBy(t *testing.T) {
 }
 
 func TestSortByDescending(t *testing.T) {
-	got := seq.SortByDescending(seq.OfSlice([]int{1, 3, 2}), func(n int) int { return n }).ToSlice()
+	got := seq.OfSlice([]int{1, 3, 2}).SortByDescending(func(n int) int { return n }).ToSlice()
 	want := []int{3, 2, 1}
 	for i, v := range got {
 		if v != want[i] {

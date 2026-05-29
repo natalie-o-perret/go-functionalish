@@ -264,23 +264,6 @@ func (s Seq[T]) DistinctBy[K comparable](key func(T) K) Seq[T] {
 	}
 }
 
-// -- type-transforming package-level functions ---------------------------------
-// Kept for backward compatibility. Prefer the method forms: s.Map(fn), s.GroupBy(key), etc.
-
-// SortBy materialises and sorts ascending by an ordered key.
-//
-// Deprecated: use s.SortBy(key) for a fluent, chainable style.
-func SortBy[T any, K cmp.Ordered](s Seq[T], key func(T) K) Seq[T] {
-	return s.SortBy(key)
-}
-
-// SortByDescending materialises and sorts descending by an ordered key.
-//
-// Deprecated: use s.SortByDescending(key) for a fluent, chainable style.
-func SortByDescending[T any, K cmp.Ordered](s Seq[T], key func(T) K) Seq[T] {
-	return s.SortByDescending(key)
-}
-
 // -- lazy pipeline methods (continued) ----------------------------------------
 
 // Rev materialises, reverses, then re-wraps lazily.
@@ -298,11 +281,6 @@ func (s Seq[T]) Iter(fn func(T)) {
 }
 
 // -- terminal methods ----------------------------------------------------------
-
-// ToArray materialises the sequence into a slice.
-//
-// Deprecated: ToArray was renamed to ToSlice for Go idiom accuracy.
-func (s Seq[T]) ToArray() []T { return s.ToSlice() }
 
 // ToSlice materialises the sequence into a slice.
 func (s Seq[T]) ToSlice() []T { return slices.Collect(iter.Seq[T](s)) }
