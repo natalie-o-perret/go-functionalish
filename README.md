@@ -460,13 +460,11 @@ seq.Map(seq.OfSlice(cars).Filter(isActive), toName)
 seq.OfSlice(cars).Filter(isActive).Map(toName).SortBy(strings.ToLower).ToSlice()
 ```
 
-The old package-level forms (`seq.Map`, `option.Bind`, etc.) are still present
-and compile; they delegate to the methods and carry a `Deprecated` doc comment
-pointing to the method form. Existing code needs no changes.
-
-One exception: `Zip` on `Seq[T]` and `Slice[T]` cannot be a method because
-returning `Seq[Pair[T,U]]` would create an instantiation cycle in the type
-checker. It stays a package-level function and is not deprecated.
+One exception: `Zip` cannot be a method on `Seq[T]`. If it were, its return type
+`Seq[Pair[T,U]]` would be another instantiation of `Seq`, whose own method set
+would need to be checked — including `Zip`, returning `Seq[Pair[Pair[T,U],V]]`,
+and so on forever. Go's type checker rejects this infinite expansion, so `Zip`
+stays a package-level function.
 
 ### Lazy (`seq`) vs eager (`slice`)
 
