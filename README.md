@@ -20,16 +20,16 @@ fluent pipelines via Go 1.27 generic methods.
 
 ## Packages
 
-| Package      | Description                                                             |
-|--------------|-------------------------------------------------------------------------|
-| `seq`        | Lazy `Seq[T]`: F#-style sequence pipelines with fully fluent methods    |
-| `slice`      | Eager `Slice[T]`: same fluent API as `seq` over in-memory slices        |
-| `pseq`       | Parallel `Seq[T]`: goroutine-per-chunk Map, Filter, Reduce, ...         |
-| `option`     | `Option[T]`: explicit presence/absence, no nil                          |
-| `result`     | `Result[T,E]`: railway-oriented error handling                          |
-| `tuple`      | `T2 / T3 / T4`: typed tuples with fluent `Apply`, `MapFirst`, `Map`, … |
-| `validation` | `Validation[T,E]`: applicative error accumulation                       |
-| `pipe`       | `Pipe2`...`Pipe8`: F#-style `\|>` operator equivalent                  |
+| Package      | Description                                                            |
+| ------------ | ---------------------------------------------------------------------- |
+| `seq`        | Lazy `Seq[T]`: F#-style sequence pipelines with fully fluent methods   |
+| `slice`      | Eager `Slice[T]`: same fluent API as `seq` over in-memory slices       |
+| `pseq`       | Parallel `Seq[T]`: goroutine-per-chunk Map, Filter, Reduce, ...        |
+| `option`     | `Option[T]`: explicit presence/absence, no nil                         |
+| `result`     | `Result[T,E]`: railway-oriented error handling                         |
+| `tuple`      | `T2 / T3 / T4`: typed tuples with fluent `Apply`, `MapFirst`, `Map`... |
+| `validation` | `Validation[T,E]`: applicative error accumulation                      |
+| `pipe`       | `Pipe2`...`Pipe8`: F#-style `|>` operator equivalent                   |
 | `kv`         | Lazy `Seq2[K,V]`: functional pipelines over `iter.Seq2` / maps         |
 
 ## Quick start
@@ -503,7 +503,7 @@ the same underlying methods. Benchmarks on a 10,000-element `[]int` pipeline
 (Intel Core Ultra 7):
 
 | Pipeline                              | Style  |   ns/op |   B/op | allocs |
-|---------------------------------------|--------|--------:|-------:|-------:|
+| ------------------------------------- | ------ | ------: | -----: | -----: |
 | **Small** (filter => map => take 100) | Direct |  ~1,780 |  2,064 |      9 |
 |                                       | Pipe   |  ~1,620 |  2,064 |      9 |
 | **Medium** (7 steps incl. sort)       | Direct | ~13,100 |  8,376 |     26 |
@@ -512,7 +512,7 @@ the same underlying methods. Benchmarks on a 10,000-element `[]int` pipeline
 |                                       | Pipe   | ~30,400 | 13,592 |     73 |
 
 **~6-13 % wall-clock overhead**, all from one-time closure allocations when the
-pipeline is *built*, not per element. The hot iteration loop is identical either
+pipeline is _built_, not per element. The hot iteration loop is identical either
 way. For any real workload (I/O, serialisation, business logic in the lambdas)
 this is noise: choose whichever style reads better.
 
@@ -527,7 +527,7 @@ Benchmarks on `[]int` pipelines (Intel Core Ultra 7, 8 cores):
 #### CPU-heavy workload (500 sqrt iterations per element)
 
 | Operation       | `seq` (sequential) | `pseq` (chunked) | `lo/parallel` (per-element) | pseq vs lo       |
-|-----------------|-------------------:|-----------------:|----------------------------:|------------------|
+| --------------- | -----------------: | ---------------: | --------------------------: | ---------------- |
 | **Map 1k**      |           1,968 µs |       **717 µs** |                      724 µs | ≈ tied           |
 | **Map 10k**     |          19,243 µs |     **5,509 µs** |                    6,815 µs | **1.24× faster** |
 | **Map 100k**    |         192,687 µs |    **44,555 µs** |                   57,882 µs | **1.30× faster** |
@@ -537,7 +537,7 @@ Benchmarks on `[]int` pipelines (Intel Core Ultra 7, 8 cores):
 #### Lightweight workload (`n*3+1` - exposes overhead)
 
 | Operation    | `seq` (sequential) | `pseq` (chunked) | `lo/parallel` (per-element) | pseq vs lo       |
-|--------------|-------------------:|-----------------:|----------------------------:|------------------|
+| ------------ | -----------------: | ---------------: | --------------------------: | ---------------- |
 | **Map 1k**   |           **6 µs** |            25 µs |                      316 µs | **12.7× faster** |
 | **Map 10k**  |         **122 µs** |           357 µs |                    3,473 µs | **9.7× faster**  |
 | **Map 100k** |       **1,427 µs** |         3,635 µs |                   34,398 µs | **9.5× faster**  |
@@ -545,7 +545,7 @@ Benchmarks on `[]int` pipelines (Intel Core Ultra 7, 8 cores):
 #### Memory (10k Map)
 
 |               | `pseq` | `lo/parallel` | ratio                              |
-|---------------|--------|---------------|------------------------------------|
+| ------------- | ------ | ------------- | ---------------------------------- |
 | **B/op**      | 798 KB | 1,067 KB      | lo uses 1.3× more memory           |
 | **allocs/op** | **66** | 20,051        | lo allocates **303× more objects** |
 

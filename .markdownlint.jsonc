@@ -20,6 +20,10 @@
     "style": "ordered"
   },
   // Allow emphasis used as heading (we use **bold** in tables)
-  "MD036": false
+  "MD036": false,
+  // Disable table column alignment check: false-positive on rows containing
+  // multi-byte Unicode characters (e.g. …) and escaped pipes (\|) which
+  // cause markdownlint to count bytes/rendered-width instead of raw chars.
+  "MD060": false
 }
 

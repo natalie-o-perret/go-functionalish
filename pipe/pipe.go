@@ -116,3 +116,80 @@ func Tap[T any](fn func(T)) func(T) T {
 		return v
 	}
 }
+
+// Identity returns its argument unchanged. Useful as a no-op transform in
+// pipelines, e.g. seq.OfSlice(items).Map(pipe.Identity).
+func Identity[T any](v T) T { return v }
+
+// -- numeric type constraints -------------------------------------------------
+
+// SignedInteger covers all signed integer types (~int8 through ~int64 and ~int).
+type SignedInteger interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64
+}
+
+// UnsignedInteger covers all unsigned integer types.
+type UnsignedInteger interface {
+	~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr
+}
+
+// Integer covers all integer types (signed and unsigned).
+// Use for operations valid on any integer, e.g. IsEven/IsOdd.
+type Integer interface {
+	SignedInteger | UnsignedInteger
+}
+
+// Float covers all floating-point types (~float32 and ~float64).
+type Float interface {
+	~float32 | ~float64
+}
+
+// Signed covers all types that can represent negative values
+// (signed integers and floats). Use for IsNegative.
+type Signed interface {
+	SignedInteger | Float
+}
+
+// Number covers all numeric primitive types (signed, unsigned, float).
+// Use for IsPositive.
+type Number interface {
+	Integer | Float
+}
+
+// -- common predicates --------------------------------------------------------
+
+// IsTrue reports whether v is true.
+func IsTrue(v bool) bool { return v }
+
+// IsFalse reports whether v is false.
+func IsFalse(v bool) bool { return !v }
+
+// IsZero reports whether v is the zero value for its type.
+func IsZero[T comparable](v T) bool {
+	var zero T
+	return v == zero
+}
+
+// IsNonZero reports whether v is not the zero value for its type.
+func IsNonZero[T comparable](v T) bool {
+	var zero T
+	return v != zero
+}
+
+// IsEven reports whether n is even. Defined for all integer types.
+func IsEven[T Integer](n T) bool { return n%2 == 0 }
+
+// IsOdd reports whether n is odd. Defined for all integer types.
+func IsOdd[T Integer](n T) bool { return n%2 != 0 }
+
+// IsPositive reports whether n > 0. Defined for all numeric types (integer and float).
+func IsPositive[T Number](n T) bool { return n > 0 }
+
+// IsNegative reports whether n < 0. Defined for signed types only (signed integers
+// and floats); intentionally excludes unsigned integers since they can never be negative.
+func IsNegative[T Signed](n T) bool { return n < 0 }
+
+// Not wraps a predicate, returning its logical negation.
+func Not[T any](pred func(T) bool) func(T) bool {
+	return func(v T) bool { return !pred(v) }
+}
