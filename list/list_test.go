@@ -339,3 +339,42 @@ func TestChain(t *testing.T) {
 		t.Fatalf("got %v", got)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// ZipWith3
+// ---------------------------------------------------------------------------
+
+func TestZipWith3(t *testing.T) {
+	sum := list.Of(1, 2, 3).ZipWith3(
+		list.Of(10, 20, 30),
+		list.Of(100, 200, 300),
+		func(a, b, c int) int { return a + b + c },
+	)
+	assertList(t, sum, 111, 222, 333)
+}
+
+func TestZipWith3_StopsAtShortest(t *testing.T) {
+	// shortest is the third list (2 elements)
+	got := list.Of(1, 2, 3).ZipWith3(
+		list.Of(10, 20, 30),
+		list.Of(100, 200),
+		func(a, b, c int) int { return a + b + c },
+	)
+	assertList(t, got, 111, 222)
+
+	// shortest is the receiver (1 element)
+	got2 := list.Of(1).ZipWith3(
+		list.Of(10, 20),
+		list.Of(100, 200),
+		func(a, b, c int) int { return a + b + c },
+	)
+	assertList(t, got2, 111)
+
+	// one empty list yields empty result
+	got3 := list.Of(1, 2, 3).ZipWith3(
+		list.Of[int](),
+		list.Of(100, 200, 300),
+		func(a, b, c int) int { return a + b + c },
+	)
+	assertList(t, got3)
+}

@@ -375,7 +375,11 @@ func Pairwise[T any](s Seq[T]) Seq[Pair[T, T]] {
 }
 
 // Windowed yields sliding windows of the given size as slices.
+// Non-positive sizes produce an empty sequence.
 func (s Seq[T]) Windowed(size int) ChunkedSeq[T] {
+	if size <= 0 {
+		return ChunkedSeq[T](func(func([]T) bool) {})
+	}
 	return func(yield func([]T) bool) {
 		buf := make([]T, 0, size)
 		for v := range s {
@@ -397,7 +401,11 @@ func (s Seq[T]) Windowed(size int) ChunkedSeq[T] {
 }
 
 // ChunkBySize yields non-overlapping chunks of the given size.
+// Non-positive sizes produce an empty sequence.
 func (s Seq[T]) ChunkBySize(size int) ChunkedSeq[T] {
+	if size <= 0 {
+		return ChunkedSeq[T](func(func([]T) bool) {})
+	}
 	return func(yield func([]T) bool) {
 		chunk := make([]T, 0, size)
 		for v := range s {
