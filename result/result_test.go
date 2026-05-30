@@ -45,15 +45,14 @@ func TestTry(t *testing.T) {
 }
 
 func TestMap(t *testing.T) {
-	r := result.Map(result.Ok[int, error](3), func(n int) int { return n * 2 })
+	r := result.Ok[int, error](3).Map(func(n int) int { return n * 2 })
 	if r.Unwrap() != 6 {
 		t.Fatalf("got %d", r.Unwrap())
 	}
 }
 
 func TestMapErr(t *testing.T) {
-	r := result.MapErr(
-		result.Err[int, string]("oops"),
+	r := result.Err[int, string]("oops").MapErr(
 		func(s string) int { return len(s) },
 	)
 	if r.UnwrapErr() != 4 {
@@ -63,7 +62,7 @@ func TestMapErr(t *testing.T) {
 
 func TestBind(t *testing.T) {
 	double := func(n int) result.Result[int, error] { return result.Ok[int, error](n * 2) }
-	got := result.Bind(result.Ok[int, error](5), double).Unwrap()
+	got := result.Ok[int, error](5).Bind(double).Unwrap()
 	if got != 10 {
 		t.Fatalf("got %d", got)
 	}
@@ -253,14 +252,14 @@ func TestPipeline_OrderFulfillment(t *testing.T) {
 
 	// The full 8-step pipeline.
 	process := func(input string) result.Result[Receipt, string] {
-		r1 := parseOrder(input)                // step 1: Bind
-		r2 := result.Bind(r1, resolveCustomer) // step 2: Bind
-		r3 := result.Bind(r2, checkInventory)  // step 3: Bind
-		r4 := result.Map(r3, priceItems)       // step 4: Map (pure)
-		r5 := result.Bind(r4, applyPromo)      // step 5: Bind
-		r6 := result.Map(r5, finalize)         // step 6: Map (pure)
-		r7 := result.Bind(r6, chargePayment)   // step 7: Bind
-		r8 := result.Map(r7, issueReceipt)     // step 8: Map (pure)
+		r1 := parseOrder(input)        // step 1: Bind
+		r2 := r1.Bind(resolveCustomer) // step 2: Bind
+		r3 := r2.Bind(checkInventory)  // step 3: Bind
+		r4 := r3.Map(priceItems)       // step 4: Map (pure)
+		r5 := r4.Bind(applyPromo)      // step 5: Bind
+		r6 := r5.Map(finalize)         // step 6: Map (pure)
+		r7 := r6.Bind(chargePayment)   // step 7: Bind
+		r8 := r7.Map(issueReceipt)     // step 8: Map (pure)
 		return r8
 	}
 
@@ -312,7 +311,7 @@ func TestPipeline_OrderFulfillment(t *testing.T) {
 		// We need a bigger order. But CHIP is out of stock...
 		// Instead, show MapErr adding context to a step-5 failure.
 		r := process("alice@example.com;BOLT;EXPIRED99")
-		enriched := result.MapErr(r, func(e string) string {
+		enriched := r.MapErr(func(e string) string {
 			return "order pipeline: " + e
 		})
 		assertPipeErr(t, enriched, "order pipeline: invalid promo code")
@@ -426,14 +425,14 @@ func TestPipeline_UserOnboarding(t *testing.T) {
 
 	// The full 7-step pipeline, with MapErr wrapping all errors.
 	register := func(input string) result.Result[Session, string] {
-		r1 := parseInput(input)                          // step 1
-		r2 := result.Bind(r1, validateEmail)             // step 2
-		r3 := result.Bind(r2, checkAvailable)            // step 3
-		r4 := result.Bind(r3, checkPasswordStrength)     // step 4
-		r5 := result.Map(r4, hashPassword)               // step 5 (pure)
-		r6 := result.Bind(r5, createAccount)             // step 6
-		r7 := result.Map(r6, issueSession)               // step 7 (pure)
-		return result.MapErr(r7, func(e string) string { // enrich errors
+		r1 := parseInput(input)                  // step 1
+		r2 := r1.Bind(validateEmail)             // step 2
+		r3 := r2.Bind(checkAvailable)            // step 3
+		r4 := r3.Bind(checkPasswordStrength)     // step 4
+		r5 := r4.Map(hashPassword)               // step 5 (pure)
+		r6 := r5.Bind(createAccount)             // step 6
+		r7 := r6.Map(issueSession)               // step 7 (pure)
+		return r7.MapErr(func(e string) string { // enrich errors
 			return "registration failed: " + e
 		})
 	}
@@ -477,7 +476,7 @@ func TestPipeline_UserOnboarding(t *testing.T) {
 
 // -- Pipeline 3: Ledger Processing (6 steps) ----------------------------------
 //
-// Demonstrates result.Try, result.MapErr, and result.FromOption
+// Demonstrates result.Try, result.FromOption, and method chaining
 // working together in a realistic 6-step pipeline.
 //
 // string --Bind---> RawTx --Bind---> RawTx --Bind--->
@@ -540,17 +539,14 @@ func TestPipeline_LedgerEntry(t *testing.T) {
 		return result.Ok[RawTx, string](tx)
 	}
 
-	// Step 3 (Bind): parse the amount string using result.Try + result.MapErr.
+	// Step 3 (Bind): parse the amount string using Try + MapErr.
 	parseAmount := func(tx RawTx) result.Result[EnrichedTx, string] {
-		amtResult := result.MapErr(
-			result.Try(func() (float64, error) {
-				return strconv.ParseFloat(tx.AmountStr, 64)
-			}),
-			func(e error) string {
-				return fmt.Sprintf("invalid amount %q: %v", tx.AmountStr, e)
-			},
-		)
-		return result.Map(amtResult, func(amt float64) EnrichedTx {
+		amtResult := result.Try(func() (float64, error) {
+			return strconv.ParseFloat(tx.AmountStr, 64)
+		}).MapErr(func(e error) string {
+			return fmt.Sprintf("invalid amount %q: %v", tx.AmountStr, e)
+		})
+		return amtResult.Map(func(amt float64) EnrichedTx {
 			return EnrichedTx{
 				Date:   tx.DateStr,
 				Amount: amt,
@@ -568,13 +564,11 @@ func TestPipeline_LedgerEntry(t *testing.T) {
 		if name, ok := accounts[acctID]; ok {
 			nameOpt = option.Some(name)
 		}
-		return result.Map(
-			result.FromOption(nameOpt, fmt.Sprintf("unknown account: %s", acctID)),
-			func(name string) EnrichedTx {
+		return result.FromOption(nameOpt, fmt.Sprintf("unknown account: %s", acctID)).
+			Map(func(name string) EnrichedTx {
 				tx.AccountName = name
 				return tx
-			},
-		)
+			})
 	}
 
 	// Step 5 (Map - pure): apply exchange rate to the amount.
@@ -594,12 +588,12 @@ func TestPipeline_LedgerEntry(t *testing.T) {
 
 	// The full 6-step pipeline.
 	process := func(line string) result.Result[LedgerEntry, string] {
-		r1 := parseCSV(line)                  // step 1: Bind
-		r2 := result.Bind(r1, validateFields) // step 2: Bind
-		r3 := result.Bind(r2, parseAmount)    // step 3: Bind (Try + MapErr)
-		r4 := result.Bind(r3, resolveAccount) // step 4: Bind (FromOption)
-		r5 := result.Map(r4, applyRate)       // step 5: Map (pure)
-		r6 := result.Map(r5, formatEntry)     // step 6: Map (pure)
+		r1 := parseCSV(line)          // step 1: Bind
+		r2 := r1.Bind(validateFields) // step 2: Bind
+		r3 := r2.Bind(parseAmount)    // step 3: Bind (Try + MapErr)
+		r4 := r3.Bind(resolveAccount) // step 4: Bind (FromOption)
+		r5 := r4.Map(applyRate)       // step 5: Map (pure)
+		r6 := r5.Map(formatEntry)     // step 6: Map (pure)
 		return r6
 	}
 
@@ -651,12 +645,12 @@ func TestFlatten(t *testing.T) {
 }
 func TestOrElse(t *testing.T) {
 	ok := result.Ok[int, string](1)
-	got := result.OrElse(ok, func(_ string) result.Result[int, string] { return result.Ok[int, string](99) })
+	got := ok.OrElse(func(_ string) result.Result[int, string] { return result.Ok[int, string](99) })
 	if got.Unwrap() != 1 {
 		t.Fatal("expected Ok to win")
 	}
 	err := result.Err[int, string]("oops")
-	got = result.OrElse(err, func(_ string) result.Result[int, string] { return result.Ok[int, string](42) })
+	got = err.OrElse(func(_ string) result.Result[int, string] { return result.Ok[int, string](42) })
 	if got.Unwrap() != 42 {
 		t.Fatal("expected fallback 42")
 	}
@@ -664,23 +658,23 @@ func TestOrElse(t *testing.T) {
 func TestTee(t *testing.T) {
 	var seen int
 	r := result.Ok[int, string](7)
-	out := result.Tee(r, func(v int) { seen = v })
+	out := r.Tee(func(v int) { seen = v })
 	if seen != 7 || out.Unwrap() != 7 {
 		t.Fatal("Tee should call fn and return unchanged")
 	}
 	seen = 0
-	result.Tee(result.Err[int, string]("e"), func(v int) { seen = v })
+	result.Err[int, string]("e").Tee(func(v int) { seen = v })
 	if seen != 0 {
 		t.Fatal("Tee should not call fn on Err")
 	}
 }
 func TestTeeErr(t *testing.T) {
 	var seen string
-	result.TeeErr(result.Err[int, string]("bad"), func(e string) { seen = e })
+	result.Err[int, string]("bad").TeeErr(func(e string) { seen = e })
 	if seen != "bad" {
 		t.Fatal("TeeErr should call fn on Err")
 	}
-	result.TeeErr(result.Ok[int, string](1), func(_ string) { seen = "nope" })
+	result.Ok[int, string](1).TeeErr(func(_ string) { seen = "nope" })
 	if seen == "nope" {
 		t.Fatal("TeeErr should not call fn on Ok")
 	}
@@ -709,17 +703,17 @@ func TestZip(t *testing.T) {
 func TestMap2(t *testing.T) {
 	a := result.Ok[int, string](3)
 	b := result.Ok[int, string](4)
-	got := result.Map2(a, b, func(x, y int) int { return x + y })
+	got := a.ZipWith(b, func(x, y int) int { return x + y })
 	if got.Unwrap() != 7 {
 		t.Fatalf("got %d", got.Unwrap())
 	}
 	errA := result.Err[int, string]("first")
-	got2 := result.Map2(errA, b, func(x, y int) int { return x + y })
+	got2 := errA.ZipWith(b, func(x, y int) int { return x + y })
 	if got2.UnwrapErr() != "first" {
 		t.Fatal("expected first err to win")
 	}
 	errB := result.Err[int, string]("second")
-	got3 := result.Map2(a, errB, func(x, y int) int { return x + y })
+	got3 := a.ZipWith(errB, func(x, y int) int { return x + y })
 	if got3.UnwrapErr() != "second" {
 		t.Fatal("expected second err to propagate")
 	}
@@ -788,5 +782,25 @@ func TestTraverse(t *testing.T) {
 	})
 	if got2.IsOk() || got2.UnwrapErr() != "bad input" {
 		t.Fatal("expected Err(bad input)")
+	}
+}
+
+func TestZipWith(t *testing.T) {
+	// both Ok
+	got := result.Ok[int, string](3).ZipWith(result.Ok[string, string]("px"), func(n int, s string) string {
+		return fmt.Sprintf("%d%s", n, s)
+	})
+	if !got.IsOk() || got.Unwrap() != "3px" {
+		t.Fatalf("ZipWith Ok+Ok: got %v", got)
+	}
+	// first Err
+	e1 := result.Err[int, string]("e1").ZipWith(result.Ok[string, string]("px"), func(_ int, s string) string { return s })
+	if !e1.IsErr() || e1.UnwrapErr() != "e1" {
+		t.Fatalf("ZipWith Err+Ok: got %v", e1)
+	}
+	// second Err
+	e2 := result.Ok[int, string](3).ZipWith(result.Err[string, string]("e2"), func(_ int, s string) string { return s })
+	if !e2.IsErr() || e2.UnwrapErr() != "e2" {
+		t.Fatalf("ZipWith Ok+Err: got %v", e2)
 	}
 }

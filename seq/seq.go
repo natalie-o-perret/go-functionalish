@@ -264,23 +264,6 @@ func (s Seq[T]) DistinctBy[K comparable](key func(T) K) Seq[T] {
 	}
 }
 
-// -- type-transforming package-level functions ---------------------------------
-// Kept for backward compatibility. Prefer the method forms: s.Map(fn), s.GroupBy(key), etc.
-
-// SortBy materialises and sorts ascending by an ordered key.
-//
-// Deprecated: use s.SortBy(key) for a fluent, chainable style.
-func SortBy[T any, K cmp.Ordered](s Seq[T], key func(T) K) Seq[T] {
-	return s.SortBy(key)
-}
-
-// SortByDescending materialises and sorts descending by an ordered key.
-//
-// Deprecated: use s.SortByDescending(key) for a fluent, chainable style.
-func SortByDescending[T any, K cmp.Ordered](s Seq[T], key func(T) K) Seq[T] {
-	return s.SortByDescending(key)
-}
-
 // -- lazy pipeline methods (continued) ----------------------------------------
 
 // Rev materialises, reverses, then re-wraps lazily.
@@ -298,11 +281,6 @@ func (s Seq[T]) Iter(fn func(T)) {
 }
 
 // -- terminal methods ----------------------------------------------------------
-
-// ToArray materialises the sequence into a slice.
-//
-// Deprecated: ToArray was renamed to ToSlice for Go idiom accuracy.
-func (s Seq[T]) ToArray() []T { return s.ToSlice() }
 
 // ToSlice materialises the sequence into a slice.
 func (s Seq[T]) ToSlice() []T { return slices.Collect(iter.Seq[T](s)) }
@@ -378,36 +356,6 @@ func (s Seq[T]) TryLast() option.Option[T] {
 	return option.None[T]()
 }
 
-// Fold folds the sequence using fn, starting with initial.
-//
-// Deprecated: use s.Fold(initial, fn) for a fluent, chainable style.
-func Fold[T, A any](s Seq[T], initial A, fn func(A, T) A) A {
-	return s.Fold(initial, fn)
-}
-
-// -- type-transforming package-level functions (continued) --------------------
-
-// Map transforms Seq[T] => Seq[R] lazily.
-//
-// Deprecated: use s.Map(fn) for a fluent, chainable style.
-func Map[T, R any](s Seq[T], fn func(T) R) Seq[R] {
-	return s.Map(fn)
-}
-
-// Collect transforms Seq[T] => Seq[R] via a one-to-many mapping.
-//
-// Deprecated: use s.Collect(fn) for a fluent, chainable style.
-func Collect[T, R any](s Seq[T], fn func(T) []R) Seq[R] {
-	return s.Collect(fn)
-}
-
-// GroupBy materialises and groups elements by key.
-//
-// Deprecated: use s.GroupBy(key) for a fluent, chainable style.
-func GroupBy[T any, K comparable](s Seq[T], key func(T) K) map[K][]T {
-	return s.GroupBy(key)
-}
-
 // Distinct lazily removes duplicate comparable elements, preserving first-seen order.
 func Distinct[T comparable](s Seq[T]) Seq[T] {
 	return func(yield func(T) bool) {
@@ -423,19 +371,52 @@ func Distinct[T comparable](s Seq[T]) Seq[T] {
 	}
 }
 
-// DistinctBy lazily removes duplicates by key, preserving first-seen order.
-//
-// Deprecated: use s.DistinctBy(key) for a fluent, chainable style.
-func DistinctBy[T any, K comparable](s Seq[T], key func(T) K) Seq[T] {
-	return s.DistinctBy(key)
-}
-
 // Pair is a type alias for option.Pair, kept for backward compatibility.
 // Prefer option.Pair in new code.
 type Pair[T, U any] = option.Pair[T, U]
 
-// Zip lazily pairs elements from two Seqs. Stops at the shorter one.
-// Note: Zip cannot be a method because returning Seq[Pair[T,U]] would create
+// ZipWith lazily combines s and other element-wise using fn. Stops at the shorter Seq.
+// See also the package-level [Zip] function which lazily pairs elements from two Seqs.
+func (s Seq[T]) ZipWith[U, R any](other Seq[U], fn func(T, U) R) Seq[R] {
+	return func(yield func(R) bool) {
+		nextU, stopU := iter.Pull(iter.Seq[U](other))
+		defer stopU()
+		for v := range s {
+			u, ok := nextU()
+			if !ok {
+				return
+			}
+			if !yield(fn(v, u)) {
+				return
+			}
+		}
+	}
+}
+
+// ZipWith3 lazily combines s, b, and c element-wise using fn. Stops at the shortest Seq.
+func (s Seq[T]) ZipWith3[U, V, R any](b Seq[U], c Seq[V], fn func(T, U, V) R) Seq[R] {
+	return func(yield func(R) bool) {
+		nextU, stopU := iter.Pull(iter.Seq[U](b))
+		defer stopU()
+		nextV, stopV := iter.Pull(iter.Seq[V](c))
+		defer stopV()
+		for v := range s {
+			u, okU := nextU()
+			if !okU {
+				return
+			}
+			w, okV := nextV()
+			if !okV {
+				return
+			}
+			if !yield(fn(v, u, w)) {
+				return
+			}
+		}
+	}
+}
+
+// Zip cannot be a method because returning Seq[Pair[T,U]] would create
 // an instantiation cycle in the type checker (Go spec §Generic methods).
 func Zip[T, U any](a Seq[T], b Seq[U]) Seq[Pair[T, U]] {
 	return func(yield func(Pair[T, U]) bool) {
@@ -451,11 +432,4 @@ func Zip[T, U any](a Seq[T], b Seq[U]) Seq[Pair[T, U]] {
 			}
 		}
 	}
-}
-
-// Choose applies fn to each element, keeping Some values and discarding None.
-//
-// Deprecated: use s.Choose(fn) for a fluent, chainable style.
-func Choose[T, R any](s Seq[T], fn func(T) option.Option[R]) Seq[R] {
-	return s.Choose(fn)
 }

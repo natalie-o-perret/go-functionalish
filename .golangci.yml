@@ -27,15 +27,15 @@ linters:
         - style
         - performance
       disabled-checks:
-        - hugeParam        # false-positive on generic type params
-        - rangeValCopy     # false-positive on generic type params
-        - unnamedResult    # naming return values is optional in Go
-        - dupSubExpr       # flags intentional duplicate args in tests
-        - dupOption        # flags intentional duplicate args in tests
+        - hugeParam # false-positive on generic type params
+        - rangeValCopy # false-positive on generic type params
+        - unnamedResult # naming return values is optional in Go
+        - dupSubExpr # flags intentional duplicate args in tests
+        - dupOption # flags intentional duplicate args in tests
     revive:
       rules:
         - name: exported
-          arguments: [ "checkPrivateReceivers" ]
+          arguments: ["checkPrivateReceivers"]
         - name: unused-parameter
         - name: empty-block
         - name: superfluous-else
@@ -46,5 +46,13 @@ linters:
       # PipeEndoN / ComposeEndoN carry the package prefix intentionally
       # so callers see pipe.PipeEndoN / pipe.ComposeEndoN — not a stutter.
       - path: "pipe/pipe.go"
-        linters: [ revive ]
+        linters: [revive]
         text: "stutters"
+      # golangci-lint's bundled x/tools type-checker panics with
+      # "runtime error: index out of range [1] with length 0" when loading
+      # packages that declare Go 1.27 generic methods (e.g. option.Map[R]).
+      # The panic is recovered internally and surfaced as a typecheck error.
+      # Real type errors are caught by the build+tests CI job (runs gotip directly).
+      # Remove once golang.org/x/tools ships support for Go 1.27 generic methods.
+      - linters: [typecheck]
+        text: "runtime error: index out of range"

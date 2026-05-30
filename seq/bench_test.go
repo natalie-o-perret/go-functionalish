@@ -26,10 +26,10 @@ var sink any
 // Baseline: direct method / function calls, no curried wrappers.
 func BenchmarkSmall_Direct(b *testing.B) {
 	for b.Loop() {
-		sink = seq.Map(
-			seq.OfSlice(benchData).Filter(func(n int) bool { return n%2 == 0 }),
-			func(n int) int { return n * 3 },
-		).Truncate(100).ToSlice()
+		sink = seq.OfSlice(benchData).
+			Filter(func(n int) bool { return n%2 == 0 }).
+			Map(func(n int) int { return n * 3 }).
+			Truncate(100).ToSlice()
 	}
 }
 
@@ -52,14 +52,13 @@ func BenchmarkSmall_Pipe(b *testing.B) {
 
 func BenchmarkMedium_Direct(b *testing.B) {
 	for b.Loop() {
-		sink = seq.Map(
-			seq.OfSlice(benchData).
-				Filter(func(n int) bool { return n%2 == 0 }).
-				Exclude(func(n int) bool { return n%10 == 0 }).
-				Skip(10).
-				Truncate(200),
-			func(n int) int { return n * 2 },
-		).SortWith(cmp.Compare).ToSlice()
+		sink = seq.OfSlice(benchData).
+			Filter(func(n int) bool { return n%2 == 0 }).
+			Exclude(func(n int) bool { return n%10 == 0 }).
+			Skip(10).
+			Truncate(200).
+			Map(func(n int) int { return n * 2 }).
+			SortWith(cmp.Compare).ToSlice()
 	}
 }
 

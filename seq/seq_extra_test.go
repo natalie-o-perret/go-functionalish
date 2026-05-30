@@ -129,7 +129,7 @@ func TestTryExactlyOne(t *testing.T) {
 	}
 }
 func TestMapi(t *testing.T) {
-	got := seq.Mapi(seq.OfSlice([]string{"a", "b"}), func(i int, s string) string {
+	got := seq.OfSlice([]string{"a", "b"}).Mapi(func(i int, s string) string {
 		return fmt.Sprintf("%d:%s", i, s)
 	}).ToSlice()
 	assertSlice(t, got, []string{"0:a", "1:b"})
@@ -153,7 +153,7 @@ func TestPairwise(t *testing.T) {
 	}
 }
 func TestWindowed(t *testing.T) {
-	got := seq.Windowed(seq.OfSlice([]int{1, 2, 3, 4, 5}), 3).ToSlice()
+	got := seq.OfSlice([]int{1, 2, 3, 4, 5}).Windowed(3).ToSlice()
 	if len(got) != 3 {
 		t.Fatalf("got %d", len(got))
 	}
@@ -162,7 +162,7 @@ func TestWindowed(t *testing.T) {
 	assertSlice(t, got[2], []int{3, 4, 5})
 }
 func TestChunkBySize(t *testing.T) {
-	got := seq.ChunkBySize(seq.OfSlice([]int{1, 2, 3, 4, 5}), 2).ToSlice()
+	got := seq.OfSlice([]int{1, 2, 3, 4, 5}).ChunkBySize(2).ToSlice()
 	if len(got) != 3 {
 		t.Fatalf("got %d", len(got))
 	}
@@ -171,7 +171,7 @@ func TestChunkBySize(t *testing.T) {
 	assertSlice(t, got[2], []int{5})
 }
 func TestSplitInto(t *testing.T) {
-	got := seq.SplitInto(seq.OfSlice([]int{1, 2, 3, 4, 5}), 3).ToSlice()
+	got := seq.OfSlice([]int{1, 2, 3, 4, 5}).SplitInto(3).ToSlice()
 	if len(got) != 3 {
 		t.Fatalf("got %d", len(got))
 	}
@@ -180,13 +180,13 @@ func TestSplitInto(t *testing.T) {
 	assertSlice(t, got[2], []int{5})
 }
 func TestScan(t *testing.T) {
-	assertSlice(t, seq.Scan(seq.OfSlice([]int{1, 2, 3}), 0, func(a, v int) int { return a + v }).ToSlice(), []int{0, 1, 3, 6})
+	assertSlice(t, seq.OfSlice([]int{1, 2, 3}).Scan(0, func(a, v int) int { return a + v }).ToSlice(), []int{0, 1, 3, 6})
 }
 func TestScanBack(t *testing.T) {
-	assertSlice(t, seq.ScanBack(seq.OfSlice([]int{1, 2, 3}), 0, func(v, a int) int { return v + a }).ToSlice(), []int{6, 5, 3, 0})
+	assertSlice(t, seq.OfSlice([]int{1, 2, 3}).ScanBack(0, func(v, a int) int { return v + a }).ToSlice(), []int{6, 5, 3, 0})
 }
 func TestTryPick(t *testing.T) {
-	r := seq.TryPick(seq.OfSlice([]int{1, 2, 3}), func(n int) option.Option[string] {
+	r := seq.OfSlice([]int{1, 2, 3}).TryPick(func(n int) option.Option[string] {
 		if n == 2 {
 			return option.Some("found")
 		}
@@ -214,7 +214,7 @@ func TestSum(t *testing.T) {
 }
 func TestSumByExtra(t *testing.T) {
 	type item struct{ v int }
-	if seq.SumBy(seq.OfSlice([]item{{1}, {2}, {3}}), func(i item) int { return i.v }) != 6 {
+	if seq.OfSlice([]item{{1}, {2}, {3}}).SumBy(func(i item) int { return i.v }) != 6 {
 		t.Fatal("wrong")
 	}
 }
@@ -234,11 +234,11 @@ func TestMinByMaxBy(t *testing.T) {
 		v int
 	}
 	items := []item{{"a", 3}, {"b", 1}, {"c", 2}}
-	v, _ := seq.MinBy(seq.OfSlice(items), func(i item) int { return i.v })
+	v, _ := seq.OfSlice(items).MinBy(func(i item) int { return i.v })
 	if v.n != "b" {
 		t.Fatalf("minBy: %v", v)
 	}
-	v, _ = seq.MaxBy(seq.OfSlice(items), func(i item) int { return i.v })
+	v, _ = seq.OfSlice(items).MaxBy(func(i item) int { return i.v })
 	if v.n != "a" {
 		t.Fatalf("maxBy: %v", v)
 	}
@@ -320,7 +320,7 @@ func TestCompareWith(t *testing.T) {
 	}
 }
 func TestFoldBackExtra(t *testing.T) {
-	got := seq.FoldBack(seq.OfSlice([]int{1, 2, 3}), 0, func(v, acc int) int { return v - acc })
+	got := seq.OfSlice([]int{1, 2, 3}).FoldBack(0, func(v, acc int) int { return v - acc })
 	if got != 2 {
 		t.Fatalf("got %d", got)
 	}
@@ -335,7 +335,7 @@ func TestTranspose(t *testing.T) {
 	assertSlice(t, cols[1].ToSlice(), []int{2, 4})
 }
 func TestMapFold(t *testing.T) {
-	results, state := seq.MapFold(seq.OfSlice([]int{1, 2, 3}), 0, func(s, v int) (int, int) {
+	results, state := seq.OfSlice([]int{1, 2, 3}).MapFold(0, func(s, v int) (int, int) {
 		ns := s + v
 		return ns, ns
 	})
@@ -467,4 +467,18 @@ func TestToMapBy(t *testing.T) {
 func TestOfResult(t *testing.T) {
 	assertSlice(t, seq.OfResult(result.Ok[int, string](42)).ToSlice(), []int{42})
 	assertSlice(t, seq.OfResult(result.Err[int, string]("e")).ToSlice(), []int{})
+}
+
+func TestZipWith3(t *testing.T) {
+	got := seq.OfSlice([]int{1, 2}).
+		ZipWith3(seq.OfSlice([]int{10, 20}), seq.OfSlice([]int{100, 200}), func(a, b, c int) int { return a + b + c }).
+		ToSlice()
+	assertSlice(t, got, []int{111, 222})
+	// stops at shortest
+	short := seq.OfSlice([]int{1, 2, 3}).
+		ZipWith3(seq.OfSlice([]int{10, 20}), seq.OfSlice([]int{100, 200, 300}), func(a, b, c int) int { return a + b + c }).
+		ToSlice()
+	if len(short) != 2 {
+		t.Fatalf("ZipWith3 truncation: len %d", len(short))
+	}
 }

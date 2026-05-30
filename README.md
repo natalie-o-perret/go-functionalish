@@ -10,7 +10,7 @@ No reflection. No `interface{}`. Pure generics, lazy by default, and fully
 fluent pipelines via Go 1.27 generic methods.
 
 > [!NOTE]
-> Unapologetically vibe-coded with Claude Opus 4.6.
+> Unapologetically vibe-coded with GitHub Copilot & Claude Sonnet 4.6.
 >
 > Unapologetically not "idiomatic Go."
 >
@@ -31,6 +31,8 @@ fluent pipelines via Go 1.27 generic methods.
 | `validation` | `Validation[T,E]`: applicative error accumulation                      |
 | `pipe`       | `Pipe2`...`Pipe8`: F#-style `\|>` operator equivalent                  |
 | `kv`         | Lazy `Seq2[K,V]`: functional pipelines over `iter.Seq2` / maps         |
+| `set`        | `Set[T]`: immutable set with full algebra and fluent generic methods   |
+| `list`       | `List[T]`: immutable list with private backing slice; truly immutable  |
 
 ## Quick start
 
@@ -43,6 +45,8 @@ import (
 "github.com/natalie-o-perret/go-functionalish/validation"
 "github.com/natalie-o-perret/go-functionalish/pipe"
 "github.com/natalie-o-perret/go-functionalish/kv"
+"github.com/natalie-o-perret/go-functionalish/set"
+"github.com/natalie-o-perret/go-functionalish/list"
 )
 ```
 
@@ -64,7 +68,7 @@ owners := seq.OfSlice(cars).
     ToSlice()
 // => ["Bob", "Charlie", "Diana"]
 
-// Sort, group, distinct — all chainable
+// Sort, group, distinct -- all chainable
 byCar := seq.OfSlice(cars).GroupBy(func(c Car) string { return c.Model })
 
 unique := seq.OfSlice(cars).
@@ -104,6 +108,21 @@ fibs := seq.Unfold([2]int{0, 1}, func(s [2]int) option.Option[seq.Pair[int, [2]i
 }).ToSlice()
 // => [0 1 1 2 3 5 8 13]
 
+// Windowed / ChunkBySize / SplitInto: return ChunkedSeq[T], a distinct type
+// that avoids the Seq[T] → Seq[[]T] instantiation cycle.
+// Use ChunkedToSeq to re-enter normal Seq[T] chaining.
+windows := seq.Range(1, 6).Windowed(3).ToSlice()
+// => [[1 2 3] [2 3 4] [3 4 5]]
+
+chunks := seq.Range(1, 11).ChunkBySize(3).ToSlice()
+// => [[1 2 3] [4 5 6] [7 8 9] [10]]
+
+// Bridge back to Seq[[]T] for further chaining
+seq.ChunkedToSeq(seq.Range(1, 11).ChunkBySize(3)).
+    Filter(func(c []int) bool { return len(c) == 3 }).
+    ToSlice()
+// => [[1 2 3] [4 5 6] [7 8 9]]
+
 // Partition: one pass, two slices
 evens, odds := seq.Partition(seq.Range(1, 7), func(n int) bool { return n%2 == 0 })
 // evens => [2 4 6],  odds => [1 3 5]
@@ -121,9 +140,6 @@ seq.OfOption(option.None[int]()).ToSlice() // => []
 seq.OfResult(result.Ok[int, string](7)).ToSlice()  // => [7]
 seq.OfResult(result.Err[int, string]("e")).ToSlice() // => []
 
-// Intersperse: insert separator between elements
-seq.OfSlice([]int{1, 2, 3}).Intersperse(0).ToSlice() // => [1 0 2 0 3]
-
 // StepBy: yield every n-th element starting from the first
 seq.Range(0, 10).StepBy(3).ToSlice() // => [0 3 6 9]
 
@@ -136,13 +152,10 @@ m := seq.ToMap(seq.OfSlice([]seq.Pair[string, int]{{"a", 1}, {"b", 2}}))
 // => map[a:1 b:2]
 
 byOwner := seq.ToMapBy(seq.OfSlice(cars),
-    func(c Car) string { return c.Owner },
-    func(c Car) int    { return c.Year },
+        func(c Car) string { return c.Owner },
+        func(c Car) int    { return c.Year },
 )
 // => map[Alice:2012 Bob:2016 ...]
-
-// Old package-level forms still work (deprecated, kept for compatibility)
-seq.Map(seq.OfSlice(cars).Filter(fn), func(c Car) string { return c.Owner })
 ```
 
 ### pseq: parallel sequences
@@ -213,7 +226,7 @@ work is CPU-heavy (parsing, math, serialisation). For lightweight lambdas
 
 ### option: explicit optionality
 
-```go
+````go
 // Instead of (T, bool) or *T
 name := option.Some("Alice")
 none := option.None[string]()
@@ -229,20 +242,20 @@ none.UnwrapOr("anonymous") // => "anonymous"
 profile := findUser(id).
     Bind(func(u User) option.Option[Profile] { return findProfile(u.ProfileID) })
 
-// DefaultWith: lazy default — fn is only called when None
-val := option.DefaultWith(none, func() string { return expensiveDefault() })
+// DefaultWith: lazy default -- fn is only called when None
+val := none.DefaultWith(func() string { return expensiveDefault() })
 
 // Contains: value equality check
 option.Contains(option.Some(42), 42) // => true
 
 // Tee / TeeNone: side-effects without breaking the chain
-opt := option.Tee(option.Some(42), func(v int) { log.Println("got", v) }) // => Some(42)
+opt := option.Some(42).Tee(func(v int) { log.Println("got", v) }) // => Some(42)
 
-// Map2: combine two Options
-option.Map2(option.Some(2), option.Some(3), func(a, b int) int { return a + b }) // => Some(5)
+// ZipWith: combine two Options with a function
+option.Some(2).ZipWith(option.Some(3), func(a, b int) int { return a + b }) // => Some(5)
 
 // OrElse: fallback if None
-resolved := option.OrElse(lookupCache(key), func() option.Option[string] { return lookupDB(key) })
+resolved := lookupCache(key).OrElse(func() option.Option[string] { return lookupDB(key) })
 
 // Flatten: unwrap Option[Option[T]]
 option.Flatten(option.Some(option.Some(42))) // => Some(42)
@@ -252,18 +265,15 @@ firstModern := seq.OfSlice(cars).
     Filter(func(c Car) bool { return c.Year >= 2015 }).
     TryHead() // => option.Option[Car]
 
-// Old package-level forms still work (deprecated)
-option.Map(name, strings.ToUpper)
-option.Bind(findUser(id), lookupProfile)
-```
+````
 
 ### result: railway-oriented error handling
 
-```go
+````go
 // Wrap Go's (T, error) convention
 res := result.Try(func() (User, error) { return db.FindUser(id) })
 
-// Railway pipeline — Map and Bind are now methods (Go 1.27 generic methods).
+// Railway pipeline -- Map and Bind are now methods (Go 1.27 generic methods).
 // Once on the error track, every subsequent step is skipped.
 r := parseRequest(raw).          // Result[Request, string]
     Bind(authenticate).           // step 2: may fail
@@ -274,12 +284,12 @@ r := parseRequest(raw).          // Result[Request, string]
 // r is either Ok(response) or Err from whichever step failed first.
 
 // Tee / TeeErr: side-effects without breaking the chain
-result.Tee(r, func(v Response) { log.Printf("ok: %v", v) })
-result.TeeErr(r, func(e string) { log.Printf("err: %s", e) })
+r.Tee(func(v Response) { log.Printf("ok: %v", v) })
+r.TeeErr(func(e string) { log.Printf("err: %s", e) })
 
 // OrElse: try a fallback on Err
-user := result.OrElse(lookupPrimary(id), func(e error) result.Result[User, error] {
-    return lookupReplica(id)
+user := lookupPrimary(id).OrElse(func(e error) result.Result[User, error] {
+    return lookupSecondary(id)
 })
 
 // Flatten: unwrap Result[Result[T,E],E]
@@ -290,8 +300,8 @@ result.Flatten(result.Ok[result.Result[int, string], string](result.Ok[int, stri
 result.Zip(result.Ok[int, string](1), result.Ok[string, string]("hi"))
 // => Ok({1, "hi"})
 
-// Map2: combine two Results (short-circuits on first Err)
-result.Map2(result.Ok[int, string](3), result.Ok[int, string](4),
+// ZipWith: combine two Results with a function (short-circuits on first Err)
+result.Ok[int, string](3).ZipWith(result.Ok[int, string](4),
     func(a, b int) int { return a + b }) // => Ok(7)
 
 // Sequence: []Result => Result[[]T] (short-circuits on first Err)
@@ -309,12 +319,7 @@ result.Traverse([]string{"1", "2", "3"}, func(s string) result.Result[int, strin
 // Interop with option
 opt := res.ToOption() // Ok => Some, Err => None
 res2 := result.FromOption(opt, errors.New("not found"))
-
-// Old package-level forms still work (deprecated)
-result.Map(r, normalize)
-result.Bind(r, save)
-result.MapErr(r, wrapErr)
-```
+````
 
 ### slice: eager in-memory sequences
 
@@ -332,14 +337,14 @@ users := goslice.Of(
     User{"carol", true, 70}, User{"dave", true, 85},
 )
 
-// Fully fluent — type-changing methods chain left-to-right
+// Fully fluent -- type-changing methods chain left-to-right
 names := users.
     Filter(func(u User) bool { return u.Active }).
     SortByDescending(func(u User) int { return u.Score }).
     Map(func(u User) string { return u.Name })
 // => Slice["dave", "alice", "carol"]
 
-// GroupBy, Choose, Fold — all methods
+// GroupBy, Choose, Fold -- all methods
 byActive := users.GroupBy(func(u User) bool { return u.Active })
 // => map[true:[...] false:[...]]
 
@@ -364,39 +369,186 @@ goslice.Distinct(goslice.Of(1, 2, 1, 3, 2)) // => [1 2 3]
 goslice.Except(goslice.Of(1,2,3,4), goslice.Of(2,4)) // => [1 3]
 ```
 
+### set: immutable sets
+
+`Set[T]` is a `comparable`-constrained set backed by a `map[T]struct{}`. All
+operations that "modify" the set return a new `Set`; the receiver is never
+changed.
+
+```go
+import "github.com/natalie-o-perret/go-functionalish/set"
+
+s  := set.Of(1, 2, 3, 4, 5)
+s2 := set.Of(3, 4, 5, 6, 7)
+
+// Set algebra (all return a new Set)
+s.Union(s2)                // {1 2 3 4 5 6 7}
+s.Intersect(s2)            // {3 4 5}
+s.Difference(s2)           // {1 2}
+s.SymmetricDifference(s2)  // {1 2 6 7}
+
+// Add / Remove (immutable)
+s.Add(6, 7)    // {1 2 3 4 5 6 7}
+s.Remove(1, 2) // {3 4 5}
+
+// Queries
+s.Contains(3)                               // true
+s.IsSubset(set.Of(1, 2, 3, 4, 5, 6))       // true
+s.IsSuperset(set.Of(1, 2))                  // true
+s.Len()                                     // 5
+s.ForAll(func(n int) bool { return n > 0 }) // true
+s.Exists(func(n int) bool { return n > 4 }) // true
+s.CountBy(func(n int) bool { return n%2 == 0 }) // 2
+
+// Filter / Exclude
+evens := s.Filter(func(n int) bool { return n%2 == 0 }) // {2 4}
+
+// Type-changing methods (Go 1.27 generic methods)
+set.Of(1, 2, 3, 4).
+    Filter(func(n int) bool { return n%2 == 0 }).
+    Map(func(n int) string { return strconv.Itoa(n) }).
+    ToSlice() // ["2" "4"] (order unspecified)
+
+// Fold: reduce to a single value (use only for commutative operations)
+sum := set.Of(1, 2, 3, 4, 5).Fold(0, func(acc, n int) int { return acc + n }) // 15
+
+// Iteration (order unspecified -- Go map randomisation)
+for v := range s.All() { fmt.Println(v) }
+s.Iter(func(v int) { fmt.Println(v) })
+```
+
+> **Note:** Iteration order is unspecified. Only use `Fold` for associative and
+> commutative operations (sum, count, etc.).
+
+### list: immutable lists
+
+`List[T]` is backed by a **private** `[]T`. Because the slice is unexported,
+direct index-write (`s[i] = v`) is impossible from outside the package; all
+operations return a new `List`, giving F#-style `list<'T>` semantics without
+the cache penalty of a linked list.
+
+```go
+import "github.com/natalie-o-perret/go-functionalish/list"
+
+l := list.Of(1, 2, 3, 4, 5)
+
+// All operations return a new List; the receiver is never mutated
+l.Append(6, 7)                                         // [1 2 3 4 5 6 7]
+l.Filter(func(n int) bool { return n%2 == 0 })         // [2 4]
+l.Rev()                                                // [5 4 3 2 1]
+l.SortWith(cmp.Compare)                                // [1 2 3 4 5]
+l.Truncate(3)                                          // [1 2 3]
+l.Skip(2)                                              // [3 4 5]
+
+// Safe element access via Option
+l.At(0)       // Some(1)
+l.At(10)      // None
+l.TryHead()   // Some(1)  — use Head() for (T, bool) form
+l.TryLast()   // Some(5)  — use Last() for (T, bool) form
+
+// Type-changing methods (Go 1.27 generic methods)
+list.Of(1, 2, 3, 4, 5).
+    Filter(func(n int) bool { return n%2 == 0 }).
+    Map(func(n int) string { return strconv.Itoa(n) }).
+    ToSlice() // ["2" "4"]
+
+// Fold / FoldBack
+l.Fold(0, func(acc, n int) int { return acc + n })     // 15
+l.FoldBack(0, func(n, acc int) int { return acc + n }) // 15
+
+// Scan: running accumulator
+list.Of(1, 2, 3, 4, 5).
+    Scan(0, func(acc, n int) int { return acc + n }).
+    ToSlice() // [0 1 3 6 10 15]
+
+// GroupBy, SortBy, DistinctBy -- all methods
+byParity := l.GroupBy(func(n int) string {
+    if n%2 == 0 { return "even" }
+    return "odd"
+}) // map[even:[2 4] odd:[1 3 5]]
+
+// Package-level (comparable constraint prevents method form)
+list.Distinct(list.Of(1, 2, 1, 3, 2))              // [1 2 3]
+list.Contains(list.Of(1, 2, 3), 2)                  // true
+list.Except(list.Of(1, 2, 3, 4), list.Of(2, 4))    // [1 3]
+list.Zip(list.Of(1, 2, 3), list.Of("a", "b", "c")) // [{1 a} {2 b} {3 c}]
+
+// Constructors
+list.Replicate(0, 5)                         // [0 0 0 0 0]
+list.Init(4, func(i int) int { return i * i }) // [0 1 4 9]
+
+// Iteration
+for v := range l.All() { fmt.Println(v) }
+```
+
+> **vs `slice`:** `Slice[T]` is a named type over `[]T`; `s[i] = v` is valid.
+> `List[T]` hides the backing slice, so it's truly immutable from outside the package.
+> Use `list` for F#-style `list<'T>` guarantees; use `slice` when you need
+> direct indexing or interop with Go's slice APIs.
+
 ### tuple: typed tuples
 
 ```go
 import "github.com/natalie-o-perret/go-functionalish/tuple"
 
-t := tuple.New2("alice", 30)        // T2[string, int]
-t3 := tuple.New3("x", 1, true)      // T3[string, int, bool]
+t  := tuple.Of("alice", 30)         // T2[string, int]
+t3 := tuple.Of3("x", 1, true)       // T3[string, int, bool]
+t4 := tuple.Of4("x", 1, true, 3.14) // T4[string, int, bool, float64]
 
 // Apply: call a function with the tuple's fields
 t.Apply(func(name string, age int) string {
     return fmt.Sprintf("%s is %d", name, age)
 }) // => "alice is 30"
 
-// MapFirst / MapSecond: transform individual fields
-t.MapFirst(strings.ToUpper)   // => T2["ALICE", 30]
-t.MapSecond(func(n int) int { return n + 1 }) // => T2["alice", 31]
+// T2: MapFirst / MapSecond / Map
+t.MapFirst(strings.ToUpper)                                          // T2["ALICE", 30]
+t.MapSecond(func(n int) int { return n + 1 })                        // T2["alice", 31]
+t.Map(strings.ToUpper, func(n int) float64 { return float64(n) * 1.5 }) // T2["ALICE", 45.0]
 
-// Map: transform both fields independently
-t.Map(strings.ToUpper, func(n int) float64 { return float64(n) * 1.5 })
-// => T2["ALICE", 45.0]
+// T3: MapFirst / MapSecond / MapThird / Map / Drop*
+t3.MapFirst(strings.ToUpper)                           // T3["X", 1, true]
+t3.MapSecond(func(n int) int { return n * 10 })        // T3["x", 10, true]
+t3.MapThird(func(b bool) bool { return !b })           // T3["x", 1, false]
+t3.Map(strings.ToUpper, func(n int) int { return n * 2 }, func(b bool) bool { return !b })
+// => T3["X", 2, false]
+t3.DropFirst()  // => T2[1, true]
+t3.DropSecond() // => T2["x", true]
+t3.DropThird()  // => T2["x", 1]
+
+// T4: MapFirst / MapSecond / MapThird / MapFourth / Map / Drop*
+t4.MapFourth(func(f float64) float64 { return f * 2 }) // T4["x", 1, true, 6.28]
+t4.DropFirst()   // => T3[1, true, 3.14]
+t4.DropFourth()  // => T3["x", 1, true]
+
+// Extend: grow a tuple by one element
+tuple.Of("alice", 30).Extend(true)         // T3["alice", 30, true]
+tuple.Of3("alice", 30, true).Extend(99.9)  // T4["alice", 30, true, 99.9]
+
+// Getter functions -- useful as first-class function values
+// (field access t.First works too; these exist for passing to Map/seq pipelines)
+tuple.Fst(t)                               // "alice"
+tuple.Snd(t)                               // 30
+tuple.Thd(t3)                              // true
+tuple.Fth(t4)                              // 3.14
+// e.g.: seq.OfSlice(pairs).Map(tuple.Fst[string, int]).ToSlice()
+
+// Map2 / Map3 / Map4: single function over homogeneous tuples
+// (for heterogeneous tuples, use the .Map method with one fn per field)
+tuple.Map2(tuple.Of(2, 3), func(n int) int { return n * 10 })    // T2[20, 30]
+tuple.Map3(tuple.Of3(1, 2, 3), func(n int) string { return fmt.Sprintf("%d", n) })
+// T3["1", "2", "3"]
+tuple.Map4(tuple.Of4(1, 2, 3, 4), func(n int) bool { return n%2 == 0 })
+// T4[false, true, false, true]
 
 // Chain transforms
-tuple.New2("hello", []int{1, 2, 3}).
+tuple.Of("hello", []int{1, 2, 3}).
     MapFirst(strings.ToUpper).
     MapSecond(func(s []int) int { return len(s) })
 // => T2["HELLO", 3]
 
 // Unpack into individual variables
 name, age := t.Unpack()
-
-// Old package-level forms still work (deprecated)
-tuple.Apply(t, fn)
-tuple.MapFirst(t, fn)
+x, n, b   := t3.Unpack()
 ```
 
 ### kv: key-value pipelines
@@ -409,38 +561,42 @@ inventory := map[string]int{
     "apple": 50, "banana": 3, "cherry": 120, "date": 0,
 }
 
-// Of wraps a map into a lazy Seq2
-s := kv.Of(inventory)
-
-// Filter: keep only non-zero stock
-inStock := kv.Filter(s, func(_ string, qty int) bool { return qty > 0 })
-
-// MapValues: apply a discount
-discounted := kv.MapValues(inStock, func(qty int) int { return qty * 9 / 10 })
-
-// Collect: materialise back to a map
-result := kv.Collect(discounted)
+// Fully fluent left-to-right pipeline
+result := kv.Of(inventory).
+    Filter(func(_ string, qty int) bool { return qty > 0 }).   // drop zeros
+    MapValues(func(qty int) int { return qty * 9 / 10 }).       // apply 10% discount
+    ToMap()
 // => map[apple:45 cherry:108]
 
+// Map: transform both key and value at once
+kv.Of(inventory).
+    Map(func(k string, v int) (string, string) {
+        return strings.ToUpper(k), fmt.Sprintf("%d units", v)
+    }).
+    ToMap()
+// => map[APPLE:"50 units" BANANA:"3 units" ...]
+
+// MapValues / MapKeys independently
+kv.Of(inventory).MapValues(func(v int) float64 { return float64(v) * 0.9 }).ToMap()
+kv.Of(inventory).MapKeys(func(k string) string { return strings.ToUpper(k) }).ToMap()
+
 // Keys / Values: extract as seq.Seq
-keys := kv.Keys(s).SortWith(cmp.Compare).ToSlice()
+kv.Of(inventory).Keys().SortWith(cmp.Compare).ToSlice()
 // => [apple banana cherry date]
 
-// MapKeys: transform keys
-upper := kv.Collect(kv.MapKeys(s, strings.ToUpper))
-// => map[APPLE:50 BANANA:3 ...]
-
 // Fold: reduce to a single value
-total := kv.Fold(s, 0, func(acc int, _ string, qty int) int { return acc + qty })
+total := kv.Of(inventory).Fold(0, func(acc int, _ string, qty int) int { return acc + qty })
 // => 173
 
 // ContainsKey: short-circuiting membership test
-kv.ContainsKey(s, "apple") // => true
-kv.ContainsKey(s, "mango") // => false
+kv.Of(inventory).ContainsKey("apple") // => true
+kv.Of(inventory).ContainsKey("mango") // => false
 
 // ToSeq / FromSeq: bridge to seq.Seq[seq.Pair[K,V]]
-pairs := kv.ToSeq(s).Filter(func(p seq.Pair[string, int]) bool { return p.Second > 10 }).ToSlice()
-back  := kv.Collect(kv.FromSeq(seq.OfSlice(pairs)))
+pairs := kv.Of(inventory).ToSeq().
+    Filter(func(p seq.Pair[string, int]) bool { return p.Second > 10 }).
+    ToSlice()
+back := kv.FromSeq(seq.OfSlice(pairs)).ToMap()
 ```
 
 ## Design notes
@@ -449,8 +605,8 @@ back  := kv.Collect(kv.FromSeq(seq.OfSlice(pairs)))
 
 Go 1.27 ([#77273](https://github.com/golang/go/issues/77273)) lifted the
 restriction that methods cannot introduce new type parameters. Operations that
-transform the element type — `Map`, `Collect`, `Choose`, `Fold`, `GroupBy`,
-`SortBy`, etc. — are now **methods**, enabling fully left-to-right pipelines:
+transform the element type (`Map`, `Collect`, `Choose`, `Fold`, `GroupBy`,
+`SortBy`, etc.) are now **methods**, enabling fully left-to-right pipelines:
 
 ```go
 // Before Go 1.27: inside-out function calls
@@ -460,17 +616,22 @@ seq.Map(seq.OfSlice(cars).Filter(isActive), toName)
 seq.OfSlice(cars).Filter(isActive).Map(toName).SortBy(strings.ToLower).ToSlice()
 ```
 
-The old package-level forms (`seq.Map`, `option.Bind`, etc.) are still present
-and compile — they delegate to the methods and carry a `Deprecated` doc comment
-pointing to the method form. Existing code needs no changes.
+One exception: `Zip` cannot be a method on `Seq[T]`. If it were, its return type
+`Seq[Pair[T,U]]` would be another instantiation of `Seq`, whose own method set
+would need to be checked (including `Zip`, returning `Seq[Pair[Pair[T,U],V]]`,)
+and so on forever. Go's type checker rejects this infinite expansion, so `Zip`
+stays a package-level function.
 
-One exception: `Zip` on `Seq[T]` and `Slice[T]` cannot be a method because
-returning `Seq[Pair[T,U]]` would create an instantiation cycle in the type
-checker. It stays a package-level function and is not deprecated.
+The same constraint applies to `Windowed`, `ChunkBySize`, and `SplitInto`:
+returning `Seq[[]T]` would force the type checker to instantiate `Seq[[]T]`,
+then `Seq[[][]T]`, and so on. The solution is `ChunkedSeq[T]`, a distinct
+named type whose method set (`ToSlice`, `ForEach`) carries no reference back to
+`Seq[...]`. To re-enter normal `Seq[T]` chaining, use the package-level bridge
+`seq.ChunkedToSeq[T]`.
 
 ### Lazy (`seq`) vs eager (`slice`)
 
-`Seq[T]` is a `func(yield func(T) bool)` — a lazy pull iterator. Every
+`Seq[T]` is a `func(yield func(T) bool)`, a lazy pull iterator. Every
 pipeline operation wraps the previous iterator; **nothing runs** until a terminal
 (`ToSlice`, `Head`, `Length`, ...) is called. Only operations that require the
 full sequence (`SortWith`, `SortBy`, `Rev`) must materialise early.
@@ -482,7 +643,7 @@ predictable allocation behaviour.
 ### Why does `pseq` use chunking instead of per-element goroutines?
 
 Spawning one goroutine per element (as `lo/parallel` does) is simple but scales
-poorly: 100k items = 100k goroutines = ~300k allocations and ~200–400 ms of pure
+poorly: 100k items = 100k goroutines = ~300k allocations and ~200-400 ms of pure
 scheduler overhead before any real work begins.
 
 `pseq` splits the input into `GOMAXPROCS` chunks (default 8 on a typical machine)
@@ -504,21 +665,20 @@ the same underlying methods. Benchmarks on a 10,000-element `[]int` pipeline
 
 | Pipeline                              | Style  |   ns/op |   B/op | allocs |
 | ------------------------------------- | ------ | ------: | -----: | -----: |
-| **Small** (filter => map => take 100) | Direct |  ~1,780 |  2,064 |      9 |
-|                                       | Pipe   |  ~1,620 |  2,064 |      9 |
-| **Medium** (7 steps incl. sort)       | Direct | ~13,100 |  8,376 |     26 |
-|                                       | Pipe   | ~13,900 |  8,912 |     44 |
-| **Large** (10 steps incl. rev+sort)   | Direct | ~27,100 | 12,784 |     46 |
-|                                       | Pipe   | ~30,400 | 13,592 |     73 |
+| **Small** (filter => map => take 100) | Direct |    ~700 |  2,064 |      9 |
+|                                       | Pipe   |    ~700 |  2,064 |      9 |
+| **Medium** (7 steps incl. sort)       | Direct |  ~6,300 |  8,376 |     26 |
+|                                       | Pipe   |  ~6,500 |  8,912 |     44 |
+| **Large** (10 steps incl. rev+sort)   | Direct | ~13,400 | 12,784 |     46 |
+|                                       | Pipe   | ~13,600 | 13,592 |     73 |
 
-**~6-13 % wall-clock overhead**, all from one-time closure allocations when the
-pipeline is _built_, not per element. The hot iteration loop is identical either
-way. For any real workload (I/O, serialisation, business logic in the lambdas)
-this is noise: choose whichever style reads better.
+**< 3% wall-clock overhead** (noise for any real workload), all from one-time
+closure allocations when the pipeline is _built_, not per element. The hot
+iteration loop is identical either way. Choose whichever style reads better.
 
 ### pseq vs lo/parallel
 
-[lo/parallel](https://github.com/samber/lo) spawns **one goroutine per element** —
+[lo/parallel](https://github.com/samber/lo) spawns **one goroutine per element**,
 simple, but O(n) scheduling overhead. `pseq` partitions into `GOMAXPROCS` chunks
 and runs **one goroutine per chunk** (the same strategy as .NET's PLINQ / F#'s `PSeq`).
 
@@ -526,34 +686,34 @@ Benchmarks on `[]int` pipelines (Intel Core Ultra 7, 8 cores):
 
 #### CPU-heavy workload (500 sqrt iterations per element)
 
-| Operation       | `seq` (sequential) | `pseq` (chunked) | `lo/parallel` (per-element) | pseq vs lo       |
-| --------------- | -----------------: | ---------------: | --------------------------: | ---------------- |
-| **Map 1k**      |           1,968 µs |       **717 µs** |                      724 µs | ≈ tied           |
-| **Map 10k**     |          19,243 µs |     **5,509 µs** |                    6,815 µs | **1.24× faster** |
-| **Map 100k**    |         192,687 µs |    **44,555 µs** |                   57,882 µs | **1.30× faster** |
-| **ForEach 10k** |                  — |       **328 µs** |                    2,904 µs | **8.9× faster**  |
-| **GroupBy 10k** |                  — |     **4,587 µs** |                    5,170 µs | **1.13× faster** |
+| Operation       | `seq` (sequential) | `pseq` (chunked) | `lo/parallel` (per-element) | pseq vs lo      |
+| --------------- | -----------------: | ---------------: | --------------------------: | --------------- |
+| **Map 1k**      |           1,836 µs |       **459 µs** |                      524 µs | **1.1× faster** |
+| **Map 10k**     |          19,116 µs |     **4,503 µs** |                    4,865 µs | **1.1× faster** |
+| **Map 100k**    |         184,837 µs |    **36,925 µs** |                   48,079 µs | **1.3× faster** |
+| **ForEach 10k** |                N/A |       **406 µs** |                    2,756 µs | **6.8× faster** |
+| **GroupBy 10k** |                N/A |     **4,682 µs** |                    5,058 µs | **1.1× faster** |
 
 #### Lightweight workload (`n*3+1` - exposes overhead)
 
 | Operation    | `seq` (sequential) | `pseq` (chunked) | `lo/parallel` (per-element) | pseq vs lo       |
 | ------------ | -----------------: | ---------------: | --------------------------: | ---------------- |
-| **Map 1k**   |           **6 µs** |            25 µs |                      316 µs | **12.7× faster** |
-| **Map 10k**  |         **122 µs** |           357 µs |                    3,473 µs | **9.7× faster**  |
-| **Map 100k** |       **1,427 µs** |         3,635 µs |                   34,398 µs | **9.5× faster**  |
+| **Map 1k**   |           **7 µs** |            22 µs |                      278 µs | **12.8× faster** |
+| **Map 10k**  |          **90 µs** |           300 µs |                    2,730 µs | **9.1× faster**  |
+| **Map 100k** |       **1,315 µs** |         2,440 µs |                   25,608 µs | **10.5× faster** |
 
 #### Memory (10k Map)
 
 |               | `pseq` | `lo/parallel` | ratio                              |
 | ------------- | ------ | ------------- | ---------------------------------- |
-| **B/op**      | 798 KB | 1,067 KB      | lo uses 1.3× more memory           |
-| **allocs/op** | **66** | 20,051        | lo allocates **303× more objects** |
+| **B/op**      | 798 KB | 1,047 KB      | lo uses 1.3× more memory           |
+| **allocs/op** | **66** | 20,003        | lo allocates **303× more objects** |
 
 **Why?** `lo` does `go func(...)` inside a `for i, item := range`, spawning 10k goroutines
 for 10k items. `pseq` splits into ~8 chunks. Goroutine spawn+schedule is ~2-4 µs each,
 so `lo` pays ~20-40 ms in scheduling alone for 10k items, while `pseq` pays ~16-32 µs.
 When the per-element work is heavy enough, both approaches saturate the CPUs and converge.
-When it isn't, `lo` is 10-13x slower than `pseq`, and even slower than sequential `seq`.
+When it isn't, `lo` is **9-13× slower** than `pseq`, and even slower than sequential `seq`.
 
 **Rule of thumb:** for lightweight lambdas, don't parallelize at all - use `seq`.
 For CPU-heavy work (parsing, crypto, compression, complex transforms), `pseq` gives
@@ -581,4 +741,6 @@ seq        =>  option, result
 slice      =>  option
 pseq       =>  seq, option
 kv         =>  seq
+set        =>  option
+list       =>  option
 ```

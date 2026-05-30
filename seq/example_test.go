@@ -9,14 +9,14 @@ import (
 	"github.com/natalie-o-perret/go-functionalish/seq"
 )
 
-func ExampleMap() {
-	squares := seq.Map(seq.Range(1, 6), func(n int) int { return n * n }).ToSlice()
+func ExampleSeq_Map() {
+	squares := seq.Range(1, 6).Map(func(n int) int { return n * n }).ToSlice()
 	fmt.Println(squares)
 	// Output: [1 4 9 16 25]
 }
 
-func ExampleFold() {
-	sum := seq.Fold(seq.Range(1, 6), 0, func(acc, v int) int { return acc + v })
+func ExampleSeq_Fold() {
+	sum := seq.Range(1, 6).Fold(0, func(acc, v int) int { return acc + v })
 	fmt.Println(sum)
 	// Output: 15
 }
@@ -36,9 +36,8 @@ func ExampleSeq_Cycle() {
 	// Output: [ping pong ping pong ping]
 }
 
-func ExampleChoose() {
-	parsed := seq.Choose(
-		seq.OfSlice([]string{"2015", "bad", "2018", "nope", "2020"}),
+func ExampleSeq_Choose() {
+	parsed := seq.OfSlice([]string{"2015", "bad", "2018", "nope", "2020"}).Choose(
 		func(s string) option.Option[int] {
 			n, err := strconv.Atoi(s)
 			if err != nil {

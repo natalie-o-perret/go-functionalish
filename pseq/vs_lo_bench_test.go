@@ -43,7 +43,7 @@ func lightweight(n int) int { return n*3 + 1 }
 func BenchmarkVs_Map_Heavy_1k_Seq(b *testing.B) {
 	data := makeInts(1_000)
 	for b.Loop() {
-		vsSink = seq.Map(seq.OfSlice(data), cpuHeavy).ToSlice()
+		vsSink = seq.OfSlice(data).Map(cpuHeavy).ToSlice()
 	}
 }
 
@@ -64,7 +64,7 @@ func BenchmarkVs_Map_Heavy_1k_Lo(b *testing.B) {
 func BenchmarkVs_Map_Heavy_10k_Seq(b *testing.B) {
 	data := makeInts(10_000)
 	for b.Loop() {
-		vsSink = seq.Map(seq.OfSlice(data), cpuHeavy).ToSlice()
+		vsSink = seq.OfSlice(data).Map(cpuHeavy).ToSlice()
 	}
 }
 
@@ -85,7 +85,7 @@ func BenchmarkVs_Map_Heavy_10k_Lo(b *testing.B) {
 func BenchmarkVs_Map_Heavy_100k_Seq(b *testing.B) {
 	data := makeInts(100_000)
 	for b.Loop() {
-		vsSink = seq.Map(seq.OfSlice(data), cpuHeavy).ToSlice()
+		vsSink = seq.OfSlice(data).Map(cpuHeavy).ToSlice()
 	}
 }
 
@@ -110,7 +110,7 @@ func BenchmarkVs_Map_Heavy_100k_Lo(b *testing.B) {
 func BenchmarkVs_Map_Light_1k_Seq(b *testing.B) {
 	data := makeInts(1_000)
 	for b.Loop() {
-		vsSink = seq.Map(seq.OfSlice(data), lightweight).ToSlice()
+		vsSink = seq.OfSlice(data).Map(lightweight).ToSlice()
 	}
 }
 
@@ -131,7 +131,7 @@ func BenchmarkVs_Map_Light_1k_Lo(b *testing.B) {
 func BenchmarkVs_Map_Light_10k_Seq(b *testing.B) {
 	data := makeInts(10_000)
 	for b.Loop() {
-		vsSink = seq.Map(seq.OfSlice(data), lightweight).ToSlice()
+		vsSink = seq.OfSlice(data).Map(lightweight).ToSlice()
 	}
 }
 
@@ -152,7 +152,7 @@ func BenchmarkVs_Map_Light_10k_Lo(b *testing.B) {
 func BenchmarkVs_Map_Light_100k_Seq(b *testing.B) {
 	data := makeInts(100_000)
 	for b.Loop() {
-		vsSink = seq.Map(seq.OfSlice(data), lightweight).ToSlice()
+		vsSink = seq.OfSlice(data).Map(lightweight).ToSlice()
 	}
 }
 

@@ -351,16 +351,9 @@ func (s Seq[T]) MapFold[S, R any](initial S, fn func(S, T) (R, S)) ([]R, S) {
 
 // -- additional type-transforming package-level functions -----------------------
 
-// Mapi transforms Seq[T] => Seq[R] lazily, providing the index to fn.
-//
-// Deprecated: use s.Mapi(fn) for a fluent, chainable style.
-func Mapi[T, R any](s Seq[T], fn func(int, T) R) Seq[R] {
-	return s.Mapi(fn)
-}
-
 // Indexed pairs each element with its zero-based index.
 func Indexed[T any](s Seq[T]) Seq[Pair[int, T]] {
-	return Mapi(s, func(i int, v T) Pair[int, T] {
+	return s.Mapi(func(i int, v T) Pair[int, T] {
 		return Pair[int, T]{First: i, Second: v}
 	})
 }
@@ -382,7 +375,11 @@ func Pairwise[T any](s Seq[T]) Seq[Pair[T, T]] {
 }
 
 // Windowed yields sliding windows of the given size as slices.
-func Windowed[T any](s Seq[T], size int) Seq[[]T] {
+// Non-positive sizes produce an empty sequence.
+func (s Seq[T]) Windowed(size int) ChunkedSeq[T] {
+	if size <= 0 {
+		return ChunkedSeq[T](func(func([]T) bool) {})
+	}
 	return func(yield func([]T) bool) {
 		buf := make([]T, 0, size)
 		for v := range s {
@@ -404,7 +401,11 @@ func Windowed[T any](s Seq[T], size int) Seq[[]T] {
 }
 
 // ChunkBySize yields non-overlapping chunks of the given size.
-func ChunkBySize[T any](s Seq[T], size int) Seq[[]T] {
+// Non-positive sizes produce an empty sequence.
+func (s Seq[T]) ChunkBySize(size int) ChunkedSeq[T] {
+	if size <= 0 {
+		return ChunkedSeq[T](func(func([]T) bool) {})
+	}
 	return func(yield func([]T) bool) {
 		chunk := make([]T, 0, size)
 		for v := range s {
@@ -423,10 +424,10 @@ func ChunkBySize[T any](s Seq[T], size int) Seq[[]T] {
 }
 
 // SplitInto splits the sequence into at most count roughly-equal chunks. Materialises.
-func SplitInto[T any](s Seq[T], count int) Seq[[]T] {
+func (s Seq[T]) SplitInto(count int) ChunkedSeq[T] {
 	items := slices.Collect(iter.Seq[T](s))
 	if count <= 0 || len(items) == 0 {
-		return Empty[[]T]()
+		return ChunkedSeq[T](func(func([]T) bool) {})
 	}
 	return func(yield func([]T) bool) {
 		n := len(items)
@@ -448,27 +449,6 @@ func SplitInto[T any](s Seq[T], count int) Seq[[]T] {
 			offset += sz
 		}
 	}
-}
-
-// Scan is like Fold but yields each intermediate accumulator value, starting with initial.
-//
-// Deprecated: use s.Scan(initial, fn) for a fluent, chainable style.
-func Scan[T, S any](s Seq[T], initial S, fn func(S, T) S) Seq[S] {
-	return s.Scan(initial, fn)
-}
-
-// ScanBack is like FoldBack but yields each intermediate accumulator value. Materialises.
-//
-// Deprecated: use s.ScanBack(initial, fn) for a fluent, chainable style.
-func ScanBack[T, S any](s Seq[T], initial S, fn func(T, S) S) Seq[S] {
-	return s.ScanBack(initial, fn)
-}
-
-// TryPick applies fn to each element, returning the first Some result. Short-circuits.
-//
-// Deprecated: use s.TryPick(fn) for a fluent, chainable style.
-func TryPick[T, R any](s Seq[T], fn func(T) option.Option[R]) option.Option[R] {
-	return s.TryPick(fn)
 }
 
 // Contains returns true if the sequence contains the given value. Short-circuits.
@@ -509,7 +489,7 @@ func Sum[T Numeric](s Seq[T]) T {
 }
 
 // SumBy returns the sum of fn(element) for all elements.
-func SumBy[T any, N Numeric](s Seq[T], fn func(T) N) N {
+func (s Seq[T]) SumBy[N Numeric](fn func(T) N) N {
 	var sum N
 	for v := range s {
 		sum += fn(v)
@@ -542,7 +522,7 @@ func Max[T cmp.Ordered](s Seq[T]) (T, bool) {
 }
 
 // MinBy returns the element with the minimum key and true, or (zero, false) if empty.
-func MinBy[T any, K cmp.Ordered](s Seq[T], fn func(T) K) (T, bool) {
+func (s Seq[T]) MinBy[K cmp.Ordered](fn func(T) K) (T, bool) {
 	first := true
 	var minVal T
 	var minKey K
@@ -556,7 +536,7 @@ func MinBy[T any, K cmp.Ordered](s Seq[T], fn func(T) K) (T, bool) {
 }
 
 // MaxBy returns the element with the maximum key and true, or (zero, false) if empty.
-func MaxBy[T any, K cmp.Ordered](s Seq[T], fn func(T) K) (T, bool) {
+func (s Seq[T]) MaxBy[K cmp.Ordered](fn func(T) K) (T, bool) {
 	first := true
 	var maxVal T
 	var maxKey K
@@ -586,7 +566,7 @@ func Average[T Numeric](s Seq[T]) (float64, bool) {
 
 // AverageBy returns the arithmetic mean of fn(element) as float64, and true.
 // Returns (0, false) if empty.
-func AverageBy[T any, N Numeric](s Seq[T], fn func(T) N) (float64, bool) {
+func (s Seq[T]) AverageBy[N Numeric](fn func(T) N) (float64, bool) {
 	var sum N
 	count := 0
 	for v := range s {
@@ -742,13 +722,6 @@ func CompareWith[T any](a, b Seq[T], cmpFn func(T, T) int) int {
 	return 0
 }
 
-// FoldBack folds from the right with an accumulator. Materialises.
-//
-// Deprecated: use s.FoldBack(initial, fn) for a fluent, chainable style.
-func FoldBack[T, S any](s Seq[T], initial S, fn func(T, S) S) S {
-	return s.FoldBack(initial, fn)
-}
-
 // Transpose transposes a Seq of Seqs (rows to columns). Materialises.
 func Transpose[T any](s Seq[Seq[T]]) Seq[Seq[T]] {
 	var rows [][]T
@@ -780,14 +753,6 @@ func Transpose[T any](s Seq[Seq[T]]) Seq[Seq[T]] {
 			}
 		}
 	}
-}
-
-// MapFold combines map and fold in one pass. Materialises.
-// Returns the mapped results as a slice and the final state.
-//
-// Deprecated: use s.MapFold(initial, fn) for a fluent, chainable style.
-func MapFold[S, T, R any](s Seq[T], initial S, fn func(S, T) (R, S)) ([]R, S) {
-	return s.MapFold(initial, fn)
 }
 
 // -- additional constructors ---------------------------------------------------

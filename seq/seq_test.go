@@ -2,6 +2,7 @@ package seq_test
 
 import (
 	"cmp"
+	"fmt"
 	"testing"
 
 	"github.com/natalie-o-perret/go-functionalish/seq"
@@ -20,7 +21,7 @@ func TestFilter(t *testing.T) {
 }
 
 func TestMap(t *testing.T) {
-	got := seq.Map(seq.Range(1, 4), func(n int) int { return n * n }).ToSlice()
+	got := seq.Range(1, 4).Map(func(n int) int { return n * n }).ToSlice()
 	want := []int{1, 4, 9}
 	for i, v := range got {
 		if v != want[i] {
@@ -30,7 +31,7 @@ func TestMap(t *testing.T) {
 }
 
 func TestGroupBy(t *testing.T) {
-	g := seq.GroupBy(seq.Range(1, 6), func(n int) string {
+	g := seq.Range(1, 6).GroupBy(func(n int) string {
 		if n%2 == 0 {
 			return "even"
 		}
@@ -45,14 +46,14 @@ func TestGroupBy(t *testing.T) {
 }
 
 func TestFold(t *testing.T) {
-	sum := seq.Fold(seq.Range(1, 6), 0, func(acc, v int) int { return acc + v })
+	sum := seq.Range(1, 6).Fold(0, func(acc, v int) int { return acc + v })
 	if sum != 15 {
 		t.Fatalf("got %d", sum)
 	}
 }
 
 func TestDistinctBy(t *testing.T) {
-	got := seq.DistinctBy(seq.OfSlice([]int{1, 2, 1, 3, 2}), func(n int) int { return n }).ToSlice()
+	got := seq.OfSlice([]int{1, 2, 1, 3, 2}).DistinctBy(func(n int) int { return n }).ToSlice()
 	if len(got) != 3 {
 		t.Fatalf("expected 3 unique, got %v", got)
 	}
@@ -79,7 +80,7 @@ func TestCycle(t *testing.T) {
 }
 
 func TestSortBy(t *testing.T) {
-	got := seq.SortBy(seq.OfSlice([]int{3, 1, 2}), func(n int) int { return n }).ToSlice()
+	got := seq.OfSlice([]int{3, 1, 2}).SortBy(func(n int) int { return n }).ToSlice()
 	for i, v := range got {
 		if v != i+1 {
 			t.Fatalf("pos %d: got %d", i, v)
@@ -88,7 +89,7 @@ func TestSortBy(t *testing.T) {
 }
 
 func TestSortByDescending(t *testing.T) {
-	got := seq.SortByDescending(seq.OfSlice([]int{1, 3, 2}), func(n int) int { return n }).ToSlice()
+	got := seq.OfSlice([]int{1, 3, 2}).SortByDescending(func(n int) int { return n }).ToSlice()
 	want := []int{3, 2, 1}
 	for i, v := range got {
 		if v != want[i] {
@@ -135,5 +136,25 @@ func TestSortWith(t *testing.T) {
 		if v != i+1 {
 			t.Fatalf("pos %d: got %d", i, v)
 		}
+	}
+}
+
+func TestZipWith(t *testing.T) {
+	got := seq.OfSlice([]int{1, 2, 3}).
+		ZipWith(seq.OfSlice([]string{"a", "b", "c"}), func(n int, s string) string {
+			return fmt.Sprintf("%d%s", n, s)
+		}).ToSlice()
+	want := []string{"1a", "2b", "3c"}
+	for i, v := range got {
+		if v != want[i] {
+			t.Fatalf("ZipWith[%d]: got %q want %q", i, v, want[i])
+		}
+	}
+	// stops at shorter
+	short := seq.OfSlice([]int{1, 2}).
+		ZipWith(seq.OfSlice([]string{"x", "y", "z"}), func(_ int, s string) string { return s }).
+		ToSlice()
+	if len(short) != 2 {
+		t.Fatalf("ZipWith truncation: len %d", len(short))
 	}
 }
