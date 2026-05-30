@@ -31,6 +31,8 @@ fluent pipelines via Go 1.27 generic methods.
 | `validation` | `Validation[T,E]`: applicative error accumulation                      |
 | `pipe`       | `Pipe2`...`Pipe8`: F#-style `\|>` operator equivalent                  |
 | `kv`         | Lazy `Seq2[K,V]`: functional pipelines over `iter.Seq2` / maps         |
+| `set`        | `Set[T]`: immutable set with full algebra and fluent generic methods   |
+| `list`       | `List[T]`: immutable list with private backing slice; truly immutable  |
 
 ## Quick start
 
@@ -43,6 +45,8 @@ import (
 "github.com/natalie-o-perret/go-functionalish/validation"
 "github.com/natalie-o-perret/go-functionalish/pipe"
 "github.com/natalie-o-perret/go-functionalish/kv"
+"github.com/natalie-o-perret/go-functionalish/set"
+"github.com/natalie-o-perret/go-functionalish/list"
 )
 ```
 
@@ -103,6 +107,21 @@ fibs := seq.Unfold([2]int{0, 1}, func(s [2]int) option.Option[seq.Pair[int, [2]i
     return option.Some(seq.Pair[int, [2]int]{First: s[0], Second: [2]int{s[1], s[0] + s[1]}})
 }).ToSlice()
 // => [0 1 1 2 3 5 8 13]
+
+// Windowed / ChunkBySize / SplitInto: return ChunkedSeq[T], a distinct type
+// that avoids the Seq[T] → Seq[[]T] instantiation cycle.
+// Use ChunkedToSeq to re-enter normal Seq[T] chaining.
+windows := seq.Range(1, 6).Windowed(3).ToSlice()
+// => [[1 2 3] [2 3 4] [3 4 5]]
+
+chunks := seq.Range(1, 11).ChunkBySize(3).ToSlice()
+// => [[1 2 3] [4 5 6] [7 8 9] [10]]
+
+// Bridge back to Seq[[]T] for further chaining
+seq.ChunkedToSeq(seq.Range(1, 11).ChunkBySize(3)).
+    Filter(func(c []int) bool { return len(c) == 3 }).
+    ToSlice()
+// => [[1 2 3] [4 5 6] [7 8 9]]
 
 // Partition: one pass, two slices
 evens, odds := seq.Partition(seq.Range(1, 7), func(n int) bool { return n%2 == 0 })
@@ -345,35 +364,186 @@ goslice.Distinct(goslice.Of(1, 2, 1, 3, 2)) // => [1 2 3]
 goslice.Except(goslice.Of(1,2,3,4), goslice.Of(2,4)) // => [1 3]
 ```
 
+### set: immutable sets
+
+`Set[T]` is a `comparable`-constrained set backed by a `map[T]struct{}`. All
+operations that "modify" the set return a new `Set`; the receiver is never
+changed.
+
+```go
+import "github.com/natalie-o-perret/go-functionalish/set"
+
+s  := set.Of(1, 2, 3, 4, 5)
+s2 := set.Of(3, 4, 5, 6, 7)
+
+// Set algebra (all return a new Set)
+s.Union(s2)                // {1 2 3 4 5 6 7}
+s.Intersect(s2)            // {3 4 5}
+s.Difference(s2)           // {1 2}
+s.SymmetricDifference(s2)  // {1 2 6 7}
+
+// Add / Remove (immutable)
+s.Add(6, 7)    // {1 2 3 4 5 6 7}
+s.Remove(1, 2) // {3 4 5}
+
+// Queries
+s.Contains(3)                               // true
+s.IsSubset(set.Of(1, 2, 3, 4, 5, 6))       // true
+s.IsSuperset(set.Of(1, 2))                  // true
+s.Len()                                     // 5
+s.ForAll(func(n int) bool { return n > 0 }) // true
+s.Exists(func(n int) bool { return n > 4 }) // true
+s.CountBy(func(n int) bool { return n%2 == 0 }) // 2
+
+// Filter / Exclude
+evens := s.Filter(func(n int) bool { return n%2 == 0 }) // {2 4}
+
+// Type-changing methods (Go 1.27 generic methods)
+set.Of(1, 2, 3, 4).
+    Filter(func(n int) bool { return n%2 == 0 }).
+    Map(func(n int) string { return strconv.Itoa(n) }).
+    ToSlice() // ["2" "4"] (order unspecified)
+
+// Fold: reduce to a single value (use only for commutative operations)
+sum := set.Of(1, 2, 3, 4, 5).Fold(0, func(acc, n int) int { return acc + n }) // 15
+
+// Iteration (order unspecified -- Go map randomisation)
+for v := range s.All() { fmt.Println(v) }
+s.Iter(func(v int) { fmt.Println(v) })
+```
+
+> **Note:** Iteration order is unspecified. Only use `Fold` for associative and
+> commutative operations (sum, count, etc.).
+
+### list: immutable lists
+
+`List[T]` is backed by a **private** `[]T`. Because the slice is unexported,
+direct index-write (`s[i] = v`) is impossible from outside the package; all
+operations return a new `List`, giving F#-style `list<'T>` semantics without
+the cache penalty of a linked list.
+
+```go
+import "github.com/natalie-o-perret/go-functionalish/list"
+
+l := list.Of(1, 2, 3, 4, 5)
+
+// All operations return a new List; the receiver is never mutated
+l.Append(6, 7)                                         // [1 2 3 4 5 6 7]
+l.Filter(func(n int) bool { return n%2 == 0 })         // [2 4]
+l.Rev()                                                // [5 4 3 2 1]
+l.SortWith(cmp.Compare)                                // [1 2 3 4 5]
+l.Truncate(3)                                          // [1 2 3]
+l.Skip(2)                                              // [3 4 5]
+
+// Safe element access via Option
+l.At(0)   // Some(1)
+l.At(10)  // None
+l.Head()  // Some(1)
+l.Last()  // Some(5)
+
+// Type-changing methods (Go 1.27 generic methods)
+list.Of(1, 2, 3, 4, 5).
+    Filter(func(n int) bool { return n%2 == 0 }).
+    Map(func(n int) string { return strconv.Itoa(n) }).
+    ToSlice() // ["2" "4"]
+
+// Fold / FoldBack
+l.Fold(0, func(acc, n int) int { return acc + n })     // 15
+l.FoldBack(0, func(n, acc int) int { return acc + n }) // 15
+
+// Scan: running accumulator
+list.Of(1, 2, 3, 4, 5).
+    Scan(0, func(acc, n int) int { return acc + n }).
+    ToSlice() // [0 1 3 6 10 15]
+
+// GroupBy, SortBy, DistinctBy -- all methods
+byParity := l.GroupBy(func(n int) string {
+    if n%2 == 0 { return "even" }
+    return "odd"
+}) // map[even:[2 4] odd:[1 3 5]]
+
+// Package-level (comparable constraint prevents method form)
+list.Distinct(list.Of(1, 2, 1, 3, 2))              // [1 2 3]
+list.Contains(list.Of(1, 2, 3), 2)                  // true
+list.Except(list.Of(1, 2, 3, 4), list.Of(2, 4))    // [1 3]
+list.Zip(list.Of(1, 2, 3), list.Of("a", "b", "c")) // [{1 a} {2 b} {3 c}]
+
+// Constructors
+list.Replicate(0, 5)                         // [0 0 0 0 0]
+list.Init(4, func(i int) int { return i * i }) // [0 1 4 9]
+
+// Iteration
+for v := range l.All() { fmt.Println(v) }
+```
+
+> **vs `slice`:** `Slice[T]` is a named type over `[]T`; `s[i] = v` is valid.
+> `List[T]` hides the backing slice, so it's truly immutable from outside the package.
+> Use `list` for F#-style `list<'T>` guarantees; use `slice` when you need
+> direct indexing or interop with Go's slice APIs.
+
 ### tuple: typed tuples
 
 ```go
 import "github.com/natalie-o-perret/go-functionalish/tuple"
 
-t := tuple.New2("alice", 30)        // T2[string, int]
-t3 := tuple.New3("x", 1, true)      // T3[string, int, bool]
+t  := tuple.Of("alice", 30)         // T2[string, int]
+t3 := tuple.Of3("x", 1, true)       // T3[string, int, bool]
+t4 := tuple.Of4("x", 1, true, 3.14) // T4[string, int, bool, float64]
 
 // Apply: call a function with the tuple's fields
 t.Apply(func(name string, age int) string {
     return fmt.Sprintf("%s is %d", name, age)
 }) // => "alice is 30"
 
-// MapFirst / MapSecond: transform individual fields
-t.MapFirst(strings.ToUpper)   // => T2["ALICE", 30]
-t.MapSecond(func(n int) int { return n + 1 }) // => T2["alice", 31]
+// T2: MapFirst / MapSecond / Map
+t.MapFirst(strings.ToUpper)                                          // T2["ALICE", 30]
+t.MapSecond(func(n int) int { return n + 1 })                        // T2["alice", 31]
+t.Map(strings.ToUpper, func(n int) float64 { return float64(n) * 1.5 }) // T2["ALICE", 45.0]
 
-// Map: transform both fields independently
-t.Map(strings.ToUpper, func(n int) float64 { return float64(n) * 1.5 })
-// => T2["ALICE", 45.0]
+// T3: MapFirst / MapSecond / MapThird / Map / Drop*
+t3.MapFirst(strings.ToUpper)                           // T3["X", 1, true]
+t3.MapSecond(func(n int) int { return n * 10 })        // T3["x", 10, true]
+t3.MapThird(func(b bool) bool { return !b })           // T3["x", 1, false]
+t3.Map(strings.ToUpper, func(n int) int { return n * 2 }, func(b bool) bool { return !b })
+// => T3["X", 2, false]
+t3.DropFirst()  // => T2[1, true]
+t3.DropSecond() // => T2["x", true]
+t3.DropThird()  // => T2["x", 1]
+
+// T4: MapFirst / MapSecond / MapThird / MapFourth / Map / Drop*
+t4.MapFourth(func(f float64) float64 { return f * 2 }) // T4["x", 1, true, 6.28]
+t4.DropFirst()   // => T3[1, true, 3.14]
+t4.DropFourth()  // => T3["x", 1, true]
+
+// Extend: grow a tuple by one element
+tuple.Of("alice", 30).Extend(true)         // T3["alice", 30, true]
+tuple.Of3("alice", 30, true).Extend(99.9)  // T4["alice", 30, true, 99.9]
+
+// Getter functions -- useful as first-class function values
+// (field access t.First works too; these exist for passing to Map/seq pipelines)
+tuple.Fst(t)                               // "alice"
+tuple.Snd(t)                               // 30
+tuple.Thd(t3)                              // true
+tuple.Fth(t4)                              // 3.14
+// e.g.: seq.OfSlice(pairs).Map(tuple.Fst[string, int]).ToSlice()
+
+// Map2 / Map3 / Map4: single function over homogeneous tuples
+// (for heterogeneous tuples, use the .Map method with one fn per field)
+tuple.Map2(tuple.Of(2, 3), func(n int) int { return n * 10 })    // T2[20, 30]
+tuple.Map3(tuple.Of3(1, 2, 3), func(n int) string { return fmt.Sprintf("%d", n) })
+// T3["1", "2", "3"]
+tuple.Map4(tuple.Of4(1, 2, 3, 4), func(n int) bool { return n%2 == 0 })
+// T4[false, true, false, true]
 
 // Chain transforms
-tuple.New2("hello", []int{1, 2, 3}).
+tuple.Of("hello", []int{1, 2, 3}).
     MapFirst(strings.ToUpper).
     MapSecond(func(s []int) int { return len(s) })
 // => T2["HELLO", 3]
 
 // Unpack into individual variables
 name, age := t.Unpack()
+x, n, b   := t3.Unpack()
 ```
 
 ### kv: key-value pipelines
@@ -443,9 +613,16 @@ seq.OfSlice(cars).Filter(isActive).Map(toName).SortBy(strings.ToLower).ToSlice()
 
 One exception: `Zip` cannot be a method on `Seq[T]`. If it were, its return type
 `Seq[Pair[T,U]]` would be another instantiation of `Seq`, whose own method set
-would need to be checked — including `Zip`, returning `Seq[Pair[Pair[T,U],V]]`,
+would need to be checked (including `Zip`, returning `Seq[Pair[Pair[T,U],V]]`,)
 and so on forever. Go's type checker rejects this infinite expansion, so `Zip`
 stays a package-level function.
+
+The same constraint applies to `Windowed`, `ChunkBySize`, and `SplitInto`:
+returning `Seq[[]T]` would force the type checker to instantiate `Seq[[]T]`,
+then `Seq[[][]T]`, and so on. The solution is `ChunkedSeq[T]`, a distinct
+named type whose method set (`ToSlice`, `ForEach`) carries no reference back to
+`Seq[...]`. To re-enter normal `Seq[T]` chaining, use the package-level bridge
+`seq.ChunkedToSeq[T]`.
 
 ### Lazy (`seq`) vs eager (`slice`)
 
@@ -461,7 +638,7 @@ predictable allocation behaviour.
 ### Why does `pseq` use chunking instead of per-element goroutines?
 
 Spawning one goroutine per element (as `lo/parallel` does) is simple but scales
-poorly: 100k items = 100k goroutines = ~300k allocations and ~200–400 ms of pure
+poorly: 100k items = 100k goroutines = ~300k allocations and ~200-400 ms of pure
 scheduler overhead before any real work begins.
 
 `pseq` splits the input into `GOMAXPROCS` chunks (default 8 on a typical machine)
@@ -483,17 +660,16 @@ the same underlying methods. Benchmarks on a 10,000-element `[]int` pipeline
 
 | Pipeline                              | Style  |   ns/op |   B/op | allocs |
 | ------------------------------------- | ------ | ------: | -----: | -----: |
-| **Small** (filter => map => take 100) | Direct |  ~1,780 |  2,064 |      9 |
-|                                       | Pipe   |  ~1,620 |  2,064 |      9 |
-| **Medium** (7 steps incl. sort)       | Direct | ~13,100 |  8,376 |     26 |
-|                                       | Pipe   | ~13,900 |  8,912 |     44 |
-| **Large** (10 steps incl. rev+sort)   | Direct | ~27,100 | 12,784 |     46 |
-|                                       | Pipe   | ~30,400 | 13,592 |     73 |
+| **Small** (filter => map => take 100) | Direct |    ~700 |  2,064 |      9 |
+|                                       | Pipe   |    ~700 |  2,064 |      9 |
+| **Medium** (7 steps incl. sort)       | Direct |  ~6,300 |  8,376 |     26 |
+|                                       | Pipe   |  ~6,500 |  8,912 |     44 |
+| **Large** (10 steps incl. rev+sort)   | Direct | ~13,400 | 12,784 |     46 |
+|                                       | Pipe   | ~13,600 | 13,592 |     73 |
 
-**~6-13 % wall-clock overhead**, all from one-time closure allocations when the
-pipeline is _built_, not per element. The hot iteration loop is identical either
-way. For any real workload (I/O, serialisation, business logic in the lambdas)
-this is noise: choose whichever style reads better.
+**< 3% wall-clock overhead** (noise for any real workload), all from one-time
+closure allocations when the pipeline is _built_, not per element. The hot
+iteration loop is identical either way. Choose whichever style reads better.
 
 ### pseq vs lo/parallel
 
@@ -505,34 +681,34 @@ Benchmarks on `[]int` pipelines (Intel Core Ultra 7, 8 cores):
 
 #### CPU-heavy workload (500 sqrt iterations per element)
 
-| Operation       | `seq` (sequential) | `pseq` (chunked) | `lo/parallel` (per-element) | pseq vs lo       |
-| --------------- | -----------------: | ---------------: | --------------------------: | ---------------- |
-| **Map 1k**      |           1,968 µs |       **717 µs** |                      724 µs | ≈ tied           |
-| **Map 10k**     |          19,243 µs |     **5,509 µs** |                    6,815 µs | **1.24× faster** |
-| **Map 100k**    |         192,687 µs |    **44,555 µs** |                   57,882 µs | **1.30× faster** |
-| **ForEach 10k** |                N/A |       **328 µs** |                    2,904 µs | **8.9× faster**  |
-| **GroupBy 10k** |                N/A |     **4,587 µs** |                    5,170 µs | **1.13× faster** |
+| Operation       | `seq` (sequential) | `pseq` (chunked) | `lo/parallel` (per-element) | pseq vs lo      |
+| --------------- | -----------------: | ---------------: | --------------------------: | --------------- |
+| **Map 1k**      |           1,836 µs |       **459 µs** |                      524 µs | **1.1× faster** |
+| **Map 10k**     |          19,116 µs |     **4,503 µs** |                    4,865 µs | **1.1× faster** |
+| **Map 100k**    |         184,837 µs |    **36,925 µs** |                   48,079 µs | **1.3× faster** |
+| **ForEach 10k** |                N/A |       **406 µs** |                    2,756 µs | **6.8× faster** |
+| **GroupBy 10k** |                N/A |     **4,682 µs** |                    5,058 µs | **1.1× faster** |
 
 #### Lightweight workload (`n*3+1` - exposes overhead)
 
 | Operation    | `seq` (sequential) | `pseq` (chunked) | `lo/parallel` (per-element) | pseq vs lo       |
 | ------------ | -----------------: | ---------------: | --------------------------: | ---------------- |
-| **Map 1k**   |           **6 µs** |            25 µs |                      316 µs | **12.7× faster** |
-| **Map 10k**  |         **122 µs** |           357 µs |                    3,473 µs | **9.7× faster**  |
-| **Map 100k** |       **1,427 µs** |         3,635 µs |                   34,398 µs | **9.5× faster**  |
+| **Map 1k**   |           **7 µs** |            22 µs |                      278 µs | **12.8× faster** |
+| **Map 10k**  |          **90 µs** |           300 µs |                    2,730 µs | **9.1× faster**  |
+| **Map 100k** |       **1,315 µs** |         2,440 µs |                   25,608 µs | **10.5× faster** |
 
 #### Memory (10k Map)
 
 |               | `pseq` | `lo/parallel` | ratio                              |
 | ------------- | ------ | ------------- | ---------------------------------- |
-| **B/op**      | 798 KB | 1,067 KB      | lo uses 1.3× more memory           |
-| **allocs/op** | **66** | 20,051        | lo allocates **303× more objects** |
+| **B/op**      | 798 KB | 1,047 KB      | lo uses 1.3× more memory           |
+| **allocs/op** | **66** | 20,003        | lo allocates **303× more objects** |
 
 **Why?** `lo` does `go func(...)` inside a `for i, item := range`, spawning 10k goroutines
 for 10k items. `pseq` splits into ~8 chunks. Goroutine spawn+schedule is ~2-4 µs each,
 so `lo` pays ~20-40 ms in scheduling alone for 10k items, while `pseq` pays ~16-32 µs.
 When the per-element work is heavy enough, both approaches saturate the CPUs and converge.
-When it isn't, `lo` is 10-13x slower than `pseq`, and even slower than sequential `seq`.
+When it isn't, `lo` is **9-13× slower** than `pseq`, and even slower than sequential `seq`.
 
 **Rule of thumb:** for lightweight lambdas, don't parallelize at all - use `seq`.
 For CPU-heavy work (parsing, crypto, compression, complex transforms), `pseq` gives
@@ -560,4 +736,6 @@ seq        =>  option, result
 slice      =>  option
 pseq       =>  seq, option
 kv         =>  seq
+set        =>  option
+list       =>  option
 ```
