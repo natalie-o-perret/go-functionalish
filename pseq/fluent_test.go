@@ -42,7 +42,7 @@ func TestPSeq_Seq_RoundTrip(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestPSeq_Filter_Empty(t *testing.T) {
-	got := pseq.OfSlice([]int{}).Filter(func(n int) bool { return true }).ToSlice()
+	got := pseq.OfSlice([]int{}).Filter(func(_ int) bool { return true }).ToSlice()
 	if len(got) != 0 {
 		t.Fatalf("want [], got %v", got)
 	}

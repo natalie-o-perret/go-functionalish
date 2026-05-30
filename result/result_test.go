@@ -794,7 +794,7 @@ func TestZipWith(t *testing.T) {
 		t.Fatalf("ZipWith Ok+Ok: got %v", got)
 	}
 	// first Err
-	e1 := result.Err[int, string]("e1").ZipWith(result.Ok[string, string]("px"), func(n int, s string) string { return s })
+	e1 := result.Err[int, string]("e1").ZipWith(result.Ok[string, string]("px"), func(_ int, s string) string { return s })
 	if !e1.IsErr() || e1.UnwrapErr() != "e1" {
 		t.Fatalf("ZipWith Err+Ok: got %v", e1)
 	}

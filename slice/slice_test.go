@@ -533,7 +533,7 @@ func TestZipWith(t *testing.T) {
 		t.Fatalf("ZipWith: got %v", got)
 	}
 	// stops at shorter
-	short := goslice.Of(1, 2).ZipWith(goslice.Of("x", "y", "z"), func(n int, s string) string { return s })
+	short := goslice.Of(1, 2).ZipWith(goslice.Of("x", "y", "z"), func(_ int, s string) string { return s })
 	if len(short) != 2 {
 		t.Fatalf("ZipWith truncation: len %d", len(short))
 	}
