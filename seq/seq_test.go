@@ -152,7 +152,7 @@ func TestZipWith(t *testing.T) {
 	}
 	// stops at shorter
 	short := seq.OfSlice([]int{1, 2}).
-		ZipWith(seq.OfSlice([]string{"x", "y", "z"}), func(n int, s string) string { return s }).
+		ZipWith(seq.OfSlice([]string{"x", "y", "z"}), func(_ int, s string) string { return s }).
 		ToSlice()
 	if len(short) != 2 {
 		t.Fatalf("ZipWith truncation: len %d", len(short))

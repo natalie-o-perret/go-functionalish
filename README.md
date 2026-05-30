@@ -152,8 +152,8 @@ m := seq.ToMap(seq.OfSlice([]seq.Pair[string, int]{{"a", 1}, {"b", 2}}))
 // => map[a:1 b:2]
 
 byOwner := seq.ToMapBy(seq.OfSlice(cars),
-	func(c Car) string { return c.Owner },
-	func(c Car) int    { return c.Year },
+        func(c Car) string { return c.Owner },
+        func(c Car) int    { return c.Year },
 )
 // => map[Alice:2012 Bob:2016 ...]
 ```

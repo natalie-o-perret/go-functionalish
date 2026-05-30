@@ -220,7 +220,7 @@ func TestIter(t *testing.T) {
 
 func TestMap(t *testing.T) {
 	s := set.Of(1, 2, 3)
-	got := s.Map(func(n int) string { return strconv.Itoa(n) })
+	got := s.Map(strconv.Itoa)
 	containsAll(t, got, "1", "2", "3")
 }
 

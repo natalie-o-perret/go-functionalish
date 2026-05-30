@@ -52,7 +52,7 @@ func CountByKeyFn[T any, K comparable](fn func(T) K, opts ...Option) func(seq.Se
 // PSeq[T] — fluent parallel sequence builder
 // ---------------------------------------------------------------------------
 
-// PSeq[T] is a fluent parallel sequence builder.
+// PSeq is a fluent parallel sequence builder.
 //
 // Construct one with [Of] or [OfSlice], then chain operations left-to-right:
 //

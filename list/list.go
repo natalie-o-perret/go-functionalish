@@ -27,7 +27,7 @@ import (
 	"github.com/natalie-o-perret/go-functionalish/option"
 )
 
-// List[T] is an immutable list backed by a private slice.
+// List is an immutable list backed by a private slice.
 // The zero value is an empty, ready-to-use List.
 type List[T any] struct {
 	items []T

@@ -356,8 +356,6 @@ func (s Seq[T]) TryLast() option.Option[T] {
 	return option.None[T]()
 }
 
-
-
 // Distinct lazily removes duplicate comparable elements, preserving first-seen order.
 func Distinct[T comparable](s Seq[T]) Seq[T] {
 	return func(yield func(T) bool) {
@@ -373,14 +371,12 @@ func Distinct[T comparable](s Seq[T]) Seq[T] {
 	}
 }
 
-
-
 // Pair is a type alias for option.Pair, kept for backward compatibility.
 // Prefer option.Pair in new code.
 type Pair[T, U any] = option.Pair[T, U]
 
-// Zip lazily pairs elements from two Seqs. Stops at the shorter one.
 // ZipWith lazily combines s and other element-wise using fn. Stops at the shorter Seq.
+// See also the package-level [Zip] function which lazily pairs elements from two Seqs.
 func (s Seq[T]) ZipWith[U, R any](other Seq[U], fn func(T, U) R) Seq[R] {
 	return func(yield func(R) bool) {
 		nextU, stopU := iter.Pull(iter.Seq[U](other))
@@ -437,5 +433,3 @@ func Zip[T, U any](a Seq[T], b Seq[U]) Seq[Pair[T, U]] {
 		}
 	}
 }
-
-

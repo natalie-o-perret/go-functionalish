@@ -207,7 +207,7 @@ func TestReduce(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestMap(t *testing.T) {
-	assertList(t, list.Of(1, 2, 3).Map(func(n int) string { return strconv.Itoa(n) }), "1", "2", "3")
+	assertList(t, list.Of(1, 2, 3).Map(strconv.Itoa), "1", "2", "3")
 }
 
 func TestMapi(t *testing.T) {

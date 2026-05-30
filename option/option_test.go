@@ -164,12 +164,12 @@ func TestZipWith(t *testing.T) {
 		t.Fatalf("ZipWith Some+Some: got %v", got)
 	}
 	// first is None
-	none := option.None[int]().ZipWith(option.Some("px"), func(n int, s string) string { return s })
+	none := option.None[int]().ZipWith(option.Some("px"), func(_ int, s string) string { return s })
 	if !none.IsNone() {
 		t.Fatal("ZipWith None+Some should be None")
 	}
 	// second is None
-	none2 := option.Some(3).ZipWith(option.None[string](), func(n int, s string) string { return s })
+	none2 := option.Some(3).ZipWith(option.None[string](), func(_ int, s string) string { return s })
 	if !none2.IsNone() {
 		t.Fatal("ZipWith Some+None should be None")
 	}

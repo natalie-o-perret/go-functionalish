@@ -5,7 +5,7 @@ import (
 	"slices"
 )
 
-// ChunkedSeq[T] is a lazy sequence of []T chunks, returned by [Seq.Windowed],
+// ChunkedSeq is a lazy sequence of []T chunks, returned by [Seq.Windowed],
 // [Seq.ChunkBySize] and [Seq.SplitInto]. Using a distinct named type breaks the
 // instantiation cycle that would arise if those methods returned Seq[[]T] directly
 // (Go's type checker would need to instantiate Seq[[]T], then Seq[[][]T], etc.).
