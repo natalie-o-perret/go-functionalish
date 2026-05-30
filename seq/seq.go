@@ -420,7 +420,7 @@ func (s Seq[T]) ZipWith3[U, V, R any](b Seq[U], c Seq[V], fn func(T, U, V) R) Se
 	}
 }
 
-// Note: Zip cannot be a method because returning Seq[Pair[T,U]] would create
+// Zip cannot be a method because returning Seq[Pair[T,U]] would create
 // an instantiation cycle in the type checker (Go spec §Generic methods).
 func Zip[T, U any](a Seq[T], b Seq[U]) Seq[Pair[T, U]] {
 	return func(yield func(Pair[T, U]) bool) {

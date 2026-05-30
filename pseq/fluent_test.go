@@ -1,13 +1,13 @@
 package pseq_test
 
 import (
-"sort"
-"sync/atomic"
-"testing"
+	"sort"
+	"sync/atomic"
+	"testing"
 
-"github.com/natalie-o-perret/go-functionalish/option"
-"github.com/natalie-o-perret/go-functionalish/pseq"
-"github.com/natalie-o-perret/go-functionalish/seq"
+	"github.com/natalie-o-perret/go-functionalish/option"
+	"github.com/natalie-o-perret/go-functionalish/pseq"
+	"github.com/natalie-o-perret/go-functionalish/seq"
 )
 
 // ---------------------------------------------------------------------------
@@ -78,11 +78,11 @@ func TestPSeq_Map_Double(t *testing.T) {
 func TestPSeq_Map_TypeChange(t *testing.T) {
 	got := pseq.OfSlice([]int{1, 2, 3}).
 		Map(func(n int) string {
-if n%2 == 0 {
-return "even"
-}
-return "odd"
-}).
+			if n%2 == 0 {
+				return "even"
+			}
+			return "odd"
+		}).
 		ToSlice()
 	assertSliceEqual(t, got, []string{"odd", "even", "odd"})
 }
@@ -123,10 +123,10 @@ func TestPSeq_Collect_Expand(t *testing.T) {
 func TestPSeq_Choose_FilterAndMap(t *testing.T) {
 	got := pseq.OfSlice([]int{1, 2, 3, 4, 5}).
 		Choose(func(n int) option.Option[string] {
-if n%2 == 0 {
-return option.Some("even")
-}
-return option.None[string]()
+			if n%2 == 0 {
+				return option.Some("even")
+			}
+			return option.None[string]()
 		}).
 		ToSlice()
 	assertSliceEqual(t, got, []string{"even", "even"})
@@ -173,11 +173,11 @@ func TestPSeq_GroupBy_Empty(t *testing.T) {
 func TestPSeq_GroupBy_OddEven(t *testing.T) {
 	got := pseq.OfSlice([]int{1, 2, 3, 4, 5, 6}).
 		GroupBy(func(n int) string {
-if n%2 == 0 {
-return "even"
-}
-return "odd"
-})
+			if n%2 == 0 {
+				return "even"
+			}
+			return "odd"
+		})
 	sort.Ints(got["even"])
 	sort.Ints(got["odd"])
 	assertSliceEqual(t, got["even"], []int{2, 4, 6})

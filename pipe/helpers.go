@@ -28,17 +28,25 @@ func Negate[T Signed](v T) T { return -v }
 
 // Abs returns the absolute value of v. Defined for signed integers and floats.
 // Note: Abs[int8](-128) overflows to -128 per Go's two's complement arithmetic.
+// For float types, Abs(-0.0) returns +0.0.
 func Abs[T Signed](v T) T {
 	if v < 0 {
 		return -v
+	}
+	if v == 0 {
+		return 0 // normalize -0.0 to +0.0 for float types
 	}
 	return v
 }
 
 // Clamp returns a function that clamps its argument to [lo, hi].
+// Panics if lo > hi.
 //
 //	pipe.Clamp(0, 100)(150) // => 100
 func Clamp[T Number](lo, hi T) func(T) T {
+	if lo > hi {
+		panic("pipe.Clamp: lo must be ≤ hi")
+	}
 	return func(v T) T {
 		if v < lo {
 			return lo
@@ -104,7 +112,7 @@ func Flip[A, B, C any](f func(A, B) C) func(B, A) C {
 // passing both results to combine. Useful for comparison and aggregation.
 //
 //	// sort words by length
-//	slices.SortFunc(words, pipe.On(cmp.Compare, len))
+//		slices.SortFunc(words, pipe.On(cmp.Compare, func(s string) int { return len(s) }))
 func On[A, B, C any](combine func(B, B) C, project func(A) B) func(A, A) C {
 	return func(a1, a2 A) C { return combine(project(a1), project(a2)) }
 }

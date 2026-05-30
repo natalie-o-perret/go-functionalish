@@ -2,11 +2,22 @@ package pipe_test
 
 import (
 	"cmp"
+	"math"
 	"strings"
 	"testing"
 
 	"github.com/natalie-o-perret/go-functionalish/pipe"
 )
+
+func shouldPanic(t *testing.T, f func()) {
+	t.Helper()
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected panic but did not panic")
+		}
+	}()
+	f()
+}
 
 // -- arithmetic ---------------------------------------------------------------
 
@@ -203,4 +214,46 @@ func TestPartial1Partial2(t *testing.T) {
 	if !contains("golang") || contains("python") {
 		t.Fatal("Partial2 strings.Contains")
 	}
+}
+
+// -- boundary / overflow tests ------------------------------------------------
+
+func TestIncDecOverflow(t *testing.T) {
+	// int8 wraps on overflow per the Go spec
+	if pipe.Inc(int8(127)) != int8(-128) {
+		t.Fatal("Inc int8 max should wrap to -128")
+	}
+	if pipe.Dec(int8(-128)) != int8(127) {
+		t.Fatal("Dec int8 min should wrap to 127")
+	}
+}
+
+func TestDivZero(t *testing.T) {
+	// integer division by zero panics
+	shouldPanic(t, func() { pipe.Div(0)(5) })
+	// float division by zero yields +Inf
+	got := pipe.Div(0.0)(5.0)
+	if !math.IsInf(got, 1) {
+		t.Fatalf("Div(0.0)(5.0) = %v, want +Inf", got)
+	}
+}
+
+func TestAbsIntMin(t *testing.T) {
+	// Abs on int8 minimum wraps per two's complement — documented behaviour
+	if pipe.Abs(int8(-128)) != int8(-128) {
+		t.Fatal("Abs[int8](-128) should overflow to -128")
+	}
+}
+
+func TestAbsNegativeZero(t *testing.T) {
+	// Abs normalises IEEE 754 negative zero to positive zero
+	got := pipe.Abs(math.Copysign(0, -1))
+	if math.Signbit(got) {
+		t.Fatalf("Abs(-0.0) = %v, want +0.0", got)
+	}
+}
+
+func TestClampPanic(t *testing.T) {
+	// Clamp panics when lo > hi
+	shouldPanic(t, func() { pipe.Clamp(10, 0) })
 }
