@@ -265,7 +265,11 @@ firstModern := seq.OfSlice(cars).
     Filter(func(c Car) bool { return c.Year >= 2015 }).
     TryHead() // => option.Option[Car]
 
-```go
+````
+
+### result: railway-oriented error handling
+
+````go
 // Wrap Go's (T, error) convention
 res := result.Try(func() (User, error) { return db.FindUser(id) })
 
@@ -285,6 +289,7 @@ r.TeeErr(func(e string) { log.Printf("err: %s", e) })
 
 // OrElse: try a fallback on Err
 user := lookupPrimary(id).OrElse(func(e error) result.Result[User, error] {
+    return lookupSecondary(id)
 })
 
 // Flatten: unwrap Result[Result[T,E],E]
@@ -436,10 +441,10 @@ l.Truncate(3)                                          // [1 2 3]
 l.Skip(2)                                              // [3 4 5]
 
 // Safe element access via Option
-l.At(0)   // Some(1)
-l.At(10)  // None
-l.Head()  // Some(1)
-l.Last()  // Some(5)
+l.At(0)       // Some(1)
+l.At(10)      // None
+l.TryHead()   // Some(1)  — use Head() for (T, bool) form
+l.TryLast()   // Some(5)  — use Last() for (T, bool) form
 
 // Type-changing methods (Go 1.27 generic methods)
 list.Of(1, 2, 3, 4, 5).

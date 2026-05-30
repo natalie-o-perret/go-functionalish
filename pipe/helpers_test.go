@@ -122,6 +122,13 @@ func TestAnd(t *testing.T) {
 	if !pipe.And[int]()(42) {
 		t.Fatal("And() should be vacuously true")
 	}
+	// short-circuit: second predicate must not be called when first returns false
+	calls := 0
+	counted := func(n int) bool { calls++; return true }
+	pipe.And(pipe.IsEven[int], counted)(3) // 3 is odd, so second pred must not run
+	if calls != 0 {
+		t.Fatalf("And: short-circuit failed, second predicate called %d time(s)", calls)
+	}
 }
 
 func TestOr(t *testing.T) {
@@ -138,6 +145,13 @@ func TestOr(t *testing.T) {
 	// vacuous false
 	if pipe.Or[int]()(42) {
 		t.Fatal("Or() should be vacuously false")
+	}
+	// short-circuit: second predicate must not be called when first returns true
+	calls := 0
+	counted := func(n int) bool { calls++; return false }
+	pipe.Or(pipe.IsZero[int], counted)(0) // 0 matches first pred, so second must not run
+	if calls != 0 {
+		t.Fatalf("Or: short-circuit failed, second predicate called %d time(s)", calls)
 	}
 }
 
