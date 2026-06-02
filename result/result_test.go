@@ -38,9 +38,13 @@ func TestTry(t *testing.T) {
 		t.Fatal("expected Ok")
 	}
 
-	fail := result.Try(func() (int, error) { return 0, errors.New("bad") })
+	sentinel := errors.New("bad")
+	fail := result.Try(func() (int, error) { return 0, sentinel })
 	if !fail.IsErr() {
 		t.Fatal("expected Err")
+	}
+	if !errors.Is(fail.UnwrapErr(), sentinel) {
+		t.Fatal("errors.Is should unwrap correctly")
 	}
 }
 

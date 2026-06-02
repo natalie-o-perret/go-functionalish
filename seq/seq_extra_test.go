@@ -26,6 +26,18 @@ func TestInit(t *testing.T) {
 func TestInitInfinite(t *testing.T) {
 	assertSlice(t, seq.InitInfinite(func(i int) int { return i * i }).Truncate(4).ToSlice(), []int{0, 1, 4, 9})
 }
+func TestTruncateNonPositive(t *testing.T) {
+	s := seq.Range(1, 6)
+	assertSlice(t, s.Truncate(0).ToSlice(), []int{})
+	assertSlice(t, s.Truncate(-1).ToSlice(), []int{})
+	assertSlice(t, s.Truncate(-100).ToSlice(), []int{})
+}
+func TestSkipNonPositive(t *testing.T) {
+	s := seq.Range(1, 4)
+	assertSlice(t, s.Skip(0).ToSlice(), []int{1, 2, 3})
+	assertSlice(t, s.Skip(-1).ToSlice(), []int{1, 2, 3})
+	assertSlice(t, s.Skip(-100).ToSlice(), []int{1, 2, 3})
+}
 func TestSingleton(t *testing.T) { assertSlice(t, seq.Singleton(42).ToSlice(), []int{42}) }
 func TestTail(t *testing.T) {
 	assertSlice(t, seq.OfSlice([]int{1, 2, 3}).Tail().ToSlice(), []int{2, 3})

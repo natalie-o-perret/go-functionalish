@@ -3,7 +3,11 @@
 // enabling railway-oriented error handling without explicit nil checks.
 package result
 
-import "github.com/natalie-o-perret/go-functionalish/option"
+import (
+	"fmt"
+
+	"github.com/natalie-o-perret/go-functionalish/option"
+)
 
 // Result holds either a successful value of type T or an error of type E.
 type Result[T, E any] struct {
@@ -19,10 +23,11 @@ func Ok[T, E any](v T) Result[T, E] { return Result[T, E]{value: v, ok: true} }
 func Err[T, E any](e E) Result[T, E] { return Result[T, E]{err: e, ok: false} }
 
 // Try calls fn and wraps the returned (T, error) pair into a Result[T, error].
+// If fn returns an error, it is wrapped with the message "result.Try: %w".
 func Try[T any](fn func() (T, error)) Result[T, error] {
 	v, err := fn()
 	if err != nil {
-		return Err[T, error](err)
+		return Err[T, error](fmt.Errorf("result.Try: %w", err))
 	}
 	return Ok[T, error](v)
 }

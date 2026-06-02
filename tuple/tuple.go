@@ -213,3 +213,10 @@ func FromFunc2[A, B, C any](fn func(A, B) C) func(T2[A, B]) C {
 func ToFunc2[A, B, C any](fn func(T2[A, B]) C) func(A, B) C {
 	return func(a A, b B) C { return fn(T2[A, B]{First: a, Second: b}) }
 }
+
+// Pair is an alias for T2. Exists for backward compatibility with option.Pair.
+// Prefer T2 directly in new code.
+type Pair[T, U any] = T2[T, U]
+
+// PairOf constructs a Pair with positional arguments.
+func PairOf[T, U any](first T, second U) Pair[T, U] { return Pair[T, U]{First: first, Second: second} }

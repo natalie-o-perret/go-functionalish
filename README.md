@@ -10,8 +10,6 @@ No reflection. No `interface{}`. Pure generics, lazy by default, and fully
 fluent pipelines via Go 1.27 generic methods.
 
 > [!NOTE]
-> Unapologetically vibe-coded with GitHub Copilot & Claude Sonnet 4.6.
->
 > Unapologetically not "idiomatic Go."
 >
 > Go gave us generics 17 years after C# and 18 after Java (the latter still erases them at runtime).
@@ -102,9 +100,9 @@ pattern := seq.OfSlice([]string{"ping", "pong"}).Cycle().Truncate(5).ToSlice()
 // Unfold: generate from a seed state (e.g. Fibonacci)
 fibs := seq.Unfold([2]int{0, 1}, func(s [2]int) option.Option[seq.Pair[int, [2]int]] {
     if s[0] > 20 {
-        return option.None[seq.Pair[int, [2]int]]()
+        return option.Empty[seq.Pair[int, [2]int]]()
     }
-    return option.Some(seq.Pair[int, [2]int]{First: s[0], Second: [2]int{s[1], s[0] + s[1]}})
+    return option.Some(seq.PairOf(s[0], [2]int{s[1], s[0] + s[1]}))
 }).ToSlice()
 // => [0 1 1 2 3 5 8 13]
 

@@ -36,7 +36,7 @@ func ExcludeFn[T any](fn func(T) bool) func(Seq[T]) Seq[T] {
 }
 
 // TruncateFn returns a transform: Seq[T] => Seq[T], keeping at most n elements.
-func TruncateFn[T any](n uint) func(Seq[T]) Seq[T] {
+func TruncateFn[T any](n int) func(Seq[T]) Seq[T] {
 	return func(s Seq[T]) Seq[T] { return s.Truncate(n) }
 }
 
@@ -46,7 +46,7 @@ func TakeWhileFn[T any](fn func(T) bool) func(Seq[T]) Seq[T] {
 }
 
 // SkipFn returns a transform: Seq[T] => Seq[T], skipping the first n elements.
-func SkipFn[T any](n uint) func(Seq[T]) Seq[T] {
+func SkipFn[T any](n int) func(Seq[T]) Seq[T] {
 	return func(s Seq[T]) Seq[T] { return s.Skip(n) }
 }
 

@@ -155,7 +155,7 @@ func Filter[T any](s seq.Seq[T], fn func(T) bool, opts ...Option) seq.Seq[T] {
 		wg.Add(1)
 		go func(idx, off, sz int) {
 			defer wg.Done()
-			var local []T
+			local := make([]T, 0, sz)
 			for i := range sz {
 				v := items[off+i]
 				if fn(v) {
