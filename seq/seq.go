@@ -377,7 +377,7 @@ type Pair[T, U any] = tuple.Pair[T, U]
 
 // PairOf is a type alias for tuple.PairOf, kept for backward compatibility.
 // Prefer tuple.PairOf in new code.
-var PairOf = tuple.PairOf
+func PairOf[T, U any](first T, second U) Pair[T, U] { return tuple.PairOf(first, second) }
 
 // ZipWith lazily combines s and other element-wise using fn. Stops at the shorter Seq.
 // See also the package-level [Zip] function which lazily pairs elements from two Seqs.

@@ -160,4 +160,4 @@ func Contains[T comparable](o Option[T], v T) bool {
 type Pair[T, U any] = tuple.Pair[T, U]
 
 // PairOf is an alias for tuple.PairOf. Prefer tuple.PairOf in new code.
-var PairOf = tuple.PairOf
+func PairOf[T, U any](first T, second U) Pair[T, U] { return tuple.PairOf(first, second) }
