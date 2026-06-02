@@ -42,6 +42,9 @@ func TestTry(t *testing.T) {
 	if !fail.IsErr() {
 		t.Fatal("expected Err")
 	}
+	if !errors.Is(fail.UnwrapErr(), errors.New("bad")) {
+		t.Fatal("errors.Is should unwrap correctly")
+	}
 }
 
 func TestMap(t *testing.T) {
