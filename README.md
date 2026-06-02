@@ -102,9 +102,9 @@ pattern := seq.OfSlice([]string{"ping", "pong"}).Cycle().Truncate(5).ToSlice()
 // Unfold: generate from a seed state (e.g. Fibonacci)
 fibs := seq.Unfold([2]int{0, 1}, func(s [2]int) option.Option[seq.Pair[int, [2]int]] {
     if s[0] > 20 {
-        return option.None[seq.Pair[int, [2]int]]()
+        return option.Empty[seq.Pair[int, [2]int]]()
     }
-    return option.Some(seq.Pair[int, [2]int]{First: s[0], Second: [2]int{s[1], s[0] + s[1]}})
+    return option.Some(seq.PairOf(s[0], [2]int{s[1], s[0] + s[1]}))
 }).ToSlice()
 // => [0 1 1 2 3 5 8 13]
 

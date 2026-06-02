@@ -12,8 +12,11 @@ type Option[T any] struct {
 // Some wraps a value in an Option.
 func Some[T any](v T) Option[T] { return Option[T]{value: v, valid: true} }
 
-// None returns an empty Option.
+// None returns an empty Option. Use var n Option[T] for a zero-value None without parentheses.
 func None[T any]() Option[T] { return Option[T]{} }
+
+// Empty is an alias for None. Use var n Option[T] for a zero-value None without parentheses.
+func Empty[T any]() Option[T] { return None[T]() }
 
 // IsSome reports whether the Option contains a value.
 func (o Option[T]) IsSome() bool { return o.valid }
@@ -156,3 +159,6 @@ type Pair[T, U any] struct {
 	First  T
 	Second U
 }
+
+// PairOf constructs a Pair with positional arguments.
+func PairOf[T, U any](first T, second U) Pair[T, U] { return Pair[T, U]{First: first, Second: second} }
