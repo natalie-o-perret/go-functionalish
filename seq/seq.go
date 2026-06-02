@@ -85,7 +85,11 @@ func (s Seq[T]) Exclude(fn func(T) bool) Seq[T] {
 }
 
 // Truncate yields at most the first n elements.
+// Non-positive n yields nothing.
 func (s Seq[T]) Truncate(n int) Seq[T] {
+	if n <= 0 {
+		return func(yield func(T) bool) {}
+	}
 	return func(yield func(T) bool) {
 		remaining := n
 		for v := range s {
@@ -112,7 +116,11 @@ func (s Seq[T]) TakeWhile(fn func(T) bool) Seq[T] {
 }
 
 // Skip skips the first n elements.
+// Non-positive n skips nothing.
 func (s Seq[T]) Skip(n int) Seq[T] {
+	if n <= 0 {
+		return s
+	}
 	return func(yield func(T) bool) {
 		remaining := n
 		for v := range s {
