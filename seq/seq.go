@@ -19,7 +19,7 @@ import (
 	"iter"
 	"slices"
 
-	"github.com/natalie-o-perret/go-functionalish/option"
+	"github.com/natalie-o-perret/go-functionalish/tuple"
 )
 
 // Seq is a lazy sequence (named type over iter.Seq[T]) so that
@@ -84,7 +84,7 @@ func (s Seq[T]) Exclude(fn func(T) bool) Seq[T] {
 }
 
 // Truncate yields at most the first n elements.
-func (s Seq[T]) Truncate(n uint) Seq[T] {
+func (s Seq[T]) Truncate(n int) Seq[T] {
 	return func(yield func(T) bool) {
 		remaining := n
 		for v := range s {
@@ -111,7 +111,7 @@ func (s Seq[T]) TakeWhile(fn func(T) bool) Seq[T] {
 }
 
 // Skip skips the first n elements.
-func (s Seq[T]) Skip(n uint) Seq[T] {
+func (s Seq[T]) Skip(n int) Seq[T] {
 	return func(yield func(T) bool) {
 		remaining := n
 		for v := range s {
@@ -371,9 +371,13 @@ func Distinct[T comparable](s Seq[T]) Seq[T] {
 	}
 }
 
-// Pair is a type alias for option.Pair, kept for backward compatibility.
-// Prefer option.Pair in new code.
-type Pair[T, U any] = option.Pair[T, U]
+// Pair is a type alias for tuple.Pair, kept for backward compatibility.
+// Prefer tuple.Pair in new code.
+type Pair[T, U any] = tuple.Pair[T, U]
+
+// PairOf is a type alias for tuple.PairOf, kept for backward compatibility.
+// Prefer tuple.PairOf in new code.
+var PairOf = tuple.PairOf
 
 // ZipWith lazily combines s and other element-wise using fn. Stops at the shorter Seq.
 // See also the package-level [Zip] function which lazily pairs elements from two Seqs.

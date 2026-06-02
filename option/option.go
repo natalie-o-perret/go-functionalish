@@ -2,6 +2,8 @@
 // It eliminates nil pointer errors by making the presence or absence of a value explicit.
 package option
 
+import "github.com/natalie-o-perret/go-functionalish/tuple"
+
 // Option represents a value that may or may not be present.
 // Use Some to wrap a value, None to represent absence.
 type Option[T any] struct {
@@ -154,11 +156,8 @@ func Contains[T comparable](o Option[T], v T) bool {
 	return o.valid && o.value == v
 }
 
-// Pair holds two values of potentially different types.
-type Pair[T, U any] struct {
-	First  T
-	Second U
-}
+// Pair is an alias for tuple.Pair. Prefer tuple.Pair in new code.
+type Pair[T, U any] = tuple.Pair[T, U]
 
-// PairOf constructs a Pair with positional arguments.
-func PairOf[T, U any](first T, second U) Pair[T, U] { return Pair[T, U]{First: first, Second: second} }
+// PairOf is an alias for tuple.PairOf. Prefer tuple.PairOf in new code.
+var PairOf = tuple.PairOf
