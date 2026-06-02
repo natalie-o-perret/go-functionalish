@@ -19,6 +19,7 @@ import (
 	"iter"
 	"slices"
 
+	"github.com/natalie-o-perret/go-functionalish/option"
 	"github.com/natalie-o-perret/go-functionalish/tuple"
 )
 
