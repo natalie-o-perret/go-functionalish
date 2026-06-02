@@ -88,7 +88,7 @@ func (s Seq[T]) Exclude(fn func(T) bool) Seq[T] {
 // Non-positive n yields nothing.
 func (s Seq[T]) Truncate(n int) Seq[T] {
 	if n <= 0 {
-		return func(yield func(T) bool) {}
+		return func(yield func(T) bool) { _ = yield }
 	}
 	return func(yield func(T) bool) {
 		remaining := n
