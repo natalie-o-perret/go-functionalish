@@ -384,7 +384,7 @@ func Distinct[T comparable](s Seq[T]) Seq[T] {
 // Prefer tuple.Pair in new code.
 type Pair[T, U any] = tuple.Pair[T, U]
 
-// PairOf is a type alias for tuple.PairOf, kept for backward compatibility.
+// PairOf is a thin wrapper around tuple.PairOf, kept for backward compatibility.
 // Prefer tuple.PairOf in new code.
 func PairOf[T, U any](first T, second U) Pair[T, U] { return tuple.PairOf(first, second) }
 
