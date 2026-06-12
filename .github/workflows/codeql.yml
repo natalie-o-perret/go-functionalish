@@ -1,0 +1,42 @@
+name: ci - security - codeql
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "23 3 * * 1" # every Monday 03:23 UTC
+
+jobs:
+  analyze:
+    name: analyze (go, gotip)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: set up Go bootstrap
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.26"
+          cache: true
+      - name: install and build gotip
+        env:
+          GOTOOLCHAIN: local
+        run: |
+          go install golang.org/dl/gotip@latest
+          "$(go env GOPATH)/bin/gotip" download
+          GOTIP_ROOT=$("$(go env GOPATH)/bin/gotip" env GOROOT)
+          echo "GOROOT=$GOTIP_ROOT" >> "$GITHUB_ENV"
+          echo "$GOTIP_ROOT/bin" >> "$GITHUB_PATH"
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: go
+      - uses: github/codeql-action/autobuild@v3
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:go

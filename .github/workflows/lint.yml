@@ -1,25 +1,30 @@
-name: ci - lint - files - *.go, *.mod, *.sum
+name: ci - lint
+
 on:
   push:
     branches: [main]
-    paths: ["**/*.go", "go.mod", "go.sum", ".golangci.yml"]
   pull_request:
     branches: [main]
-    paths: ["**/*.go", "go.mod", "go.sum", ".golangci.yml"]
+    types: [opened, edited, synchronize, reopened]
+
 jobs:
-  golangci-lint:
-    name: golangci-lint
+  commits:
+    if: github.event_name == 'pull_request'
+    uses: natalie-o-perret/.github/.github/workflows/reusable-lint-commits-conventional.yml@main
+    permissions:
+      pull-requests: read
+  go:
+    name: lint (gotip)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
       GOTOOLCHAIN: local
     steps:
       - uses: actions/checkout@v6
-      - name: set up Go bootstrap
-        uses: actions/setup-go@v6
+      - uses: actions/setup-go@v6
         with:
           go-version: "1.26"
-          cache: false
+          cache: true
       - name: weekly date for gotip cache
         id: weekly
         run: echo "date=$(date +%Y-W%V)" >> "$GITHUB_OUTPUT"
@@ -47,34 +52,23 @@ jobs:
           # which panics on Go 1.27 generic methods (typesinternal.ForEachElement + iter.go).
           # Re-enable once x/tools supports Go 1.27's type iterator API.
           args: --concurrency=1 --disable=staticcheck,unparam
+        env:
+          GOTOOLCHAIN: local
   go-mod-verify:
-    name: go mod verify
+    name: go mod verify (gotip)
     runs-on: ubuntu-latest
     env:
       GOTOOLCHAIN: local
     steps:
       - uses: actions/checkout@v6
-      - name: set up Go bootstrap
-        uses: actions/setup-go@v6
+      - uses: actions/setup-go@v6
         with:
           go-version: "1.26"
           cache: true
-      - name: weekly date for gotip cache
-        id: weekly
-        run: echo "date=$(date +%Y-W%V)" >> "$GITHUB_OUTPUT"
-      - name: cache gotip SDK
-        id: cache-gotip
-        uses: actions/cache@v4
-        with:
-          path: ~/sdk/gotip
-          key: gotip-${{ runner.os }}-${{ steps.weekly.outputs.date }}
-          restore-keys: gotip-${{ runner.os }}-
       - name: install and build gotip
         run: |
           go install golang.org/dl/gotip@latest
-          if [ "${{ steps.cache-gotip.outputs.cache-hit }}" != "true" ]; then
-            "$(go env GOPATH)/bin/gotip" download
-          fi
+          "$(go env GOPATH)/bin/gotip" download
           GOTIP_ROOT=$("$(go env GOPATH)/bin/gotip" env GOROOT)
           echo "GOROOT=$GOTIP_ROOT" >> "$GITHUB_ENV"
           echo "$GOTIP_ROOT/bin" >> "$GITHUB_PATH"
@@ -84,3 +78,9 @@ jobs:
         run: |
           go mod tidy
           git diff --exit-code go.mod go.sum
+  json:
+    uses: natalie-o-perret/.github/.github/workflows/reusable-lint-files-json.yml@main
+  md:
+    uses: natalie-o-perret/.github/.github/workflows/reusable-lint-files-md.yml@main
+  yaml:
+    uses: natalie-o-perret/.github/.github/workflows/reusable-lint-files-yaml.yml@main
