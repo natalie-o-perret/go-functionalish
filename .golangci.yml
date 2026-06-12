@@ -50,7 +50,7 @@ linters:
         - name: empty-block
         - name: superfluous-else
         - name: unreachable-code
-      # unused-parameter is disabled: the Go 1.25+ iterator protocol
-      # requires a `yield` parameter that lint cannot see being used.
+        # The Go 1.25+ iterator protocol requires a `yield` parameter
+        # that revive cannot see being used.
         - name: unused-parameter
           disabled: true
