@@ -46,7 +46,8 @@ jobs:
           echo "$GOTIP_ROOT/bin" >> "$GITHUB_PATH"
       - uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.0.2
+          version: latest
+          install-mode: goinstall
         env:
           GOTOOLCHAIN: local
   go-mod-verify:
