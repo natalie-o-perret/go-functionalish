@@ -8,7 +8,73 @@ on:
     types: [opened, edited, synchronize, reopened]
 
 jobs:
-  lint:
-    uses: natalie-o-perret/.github/.github/workflows/reusable-lint.yml@main
+  commits:
+    if: github.event_name == 'pull_request'
+    uses: natalie-o-perret/.github/.github/workflows/reusable-lint-commits-conventional.yml@main
     permissions:
       pull-requests: read
+  go:
+    name: lint (gotip)
+    runs-on: ubuntu-latest
+    env:
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.26"
+          cache: true
+      - name: weekly date for gotip cache
+        id: weekly
+        run: echo "date=$(date +%Y-W%V)" >> "$GITHUB_OUTPUT"
+      - name: cache gotip SDK
+        id: cache-gotip
+        uses: actions/cache@v4
+        with:
+          path: ~/sdk/gotip
+          key: gotip-${{ runner.os }}-${{ steps.weekly.outputs.date }}
+          restore-keys: gotip-${{ runner.os }}-
+      - name: install and build gotip
+        run: |
+          go install golang.org/dl/gotip@latest
+          if [ "${{ steps.cache-gotip.outputs.cache-hit }}" != "true" ]; then
+            "$(go env GOPATH)/bin/gotip" download
+          fi
+          GOTIP_ROOT=$("$(go env GOPATH)/bin/gotip" env GOROOT)
+          echo "GOROOT=$GOTIP_ROOT" >> "$GITHUB_ENV"
+          echo "$GOTIP_ROOT/bin" >> "$GITHUB_PATH"
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+        env:
+          GOTOOLCHAIN: local
+  go-mod-verify:
+    name: go mod verify (gotip)
+    runs-on: ubuntu-latest
+    env:
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.26"
+          cache: true
+      - name: install and build gotip
+        run: |
+          go install golang.org/dl/gotip@latest
+          "$(go env GOPATH)/bin/gotip" download
+          GOTIP_ROOT=$("$(go env GOPATH)/bin/gotip" env GOROOT)
+          echo "GOROOT=$GOTIP_ROOT" >> "$GITHUB_ENV"
+          echo "$GOTIP_ROOT/bin" >> "$GITHUB_PATH"
+      - name: verify go.sum
+        run: go mod verify
+      - name: check go mod tidy
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod go.sum
+  json:
+    uses: natalie-o-perret/.github/.github/workflows/reusable-lint-files-json.yml@main
+  md:
+    uses: natalie-o-perret/.github/.github/workflows/reusable-lint-files-md.yml@main
+  yaml:
+    uses: natalie-o-perret/.github/.github/workflows/reusable-lint-files-yaml.yml@main
