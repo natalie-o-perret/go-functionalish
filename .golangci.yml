@@ -19,8 +19,18 @@ linters:
     - nilerr
     - wastedassign
   settings:
+    errcheck:
+      # Legacy (non-exhaustive) mode. Avoids flagging discarded values
+      # from helpers that call t.Fatal or panic on error paths.
+      check-blank: false
     govet:
       enable-all: true
+      # Disable checks added in golangci-lint v2 that the shared lint
+      # workflow enables by default. They surface issues that aren't
+      # real problems in this project.
+      disable:
+        - fieldalignment # struct field reordering rarely matters; not worth the churn
+        - shadow         # err shadowing is fine when the inner one is scoped narrowly
     gocritic:
       enabled-tags:
         - diagnostic
@@ -32,27 +42,15 @@ linters:
         - unnamedResult # naming return values is optional in Go
         - dupSubExpr # flags intentional duplicate args in tests
         - dupOption # flags intentional duplicate args in tests
+        - builtinShadow # conflicts with our common use of local names like "close"
     revive:
       rules:
         - name: exported
           arguments: ["checkPrivateReceivers"]
-        - name: unused-parameter
         - name: empty-block
         - name: superfluous-else
         - name: unreachable-code
-        - name: redefines-builtin-id
-  exclusions:
-    rules:
-      # PipeEndoN / ComposeEndoN carry the package prefix intentionally
-      # so callers see pipe.PipeEndoN / pipe.ComposeEndoN — not a stutter.
-      - path: "pipe/pipe.go"
-        linters: [revive]
-        text: "stutters"
-      # golangci-lint's bundled x/tools type-checker panics with
-      # "runtime error: index out of range [1] with length 0" when loading
-      # packages that declare Go 1.27 generic methods (e.g. option.Map[R]).
-      # The panic is recovered internally and surfaced as a typecheck error.
-      # Real type errors are caught by the build+tests CI job (runs gotip directly).
-      # Remove once golang.org/x/tools ships support for Go 1.27 generic methods.
-      - linters: [typecheck]
-        text: "runtime error: index out of range"
+        # The Go 1.25+ iterator protocol requires a `yield` parameter
+        # that revive cannot see being used.
+        - name: unused-parameter
+          disabled: true
