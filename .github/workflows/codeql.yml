@@ -1,0 +1,20 @@
+name: ci - security - codeql
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "23 3 * * 1" # every Monday 03:23 UTC
+
+jobs:
+  codeql:
+    uses: natalie-o-perret/.github/.github/workflows/reusable-codeql.yml@main
+    with:
+      language: go
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read

@@ -1,0 +1,14 @@
+name: ci - lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  lint:
+    uses: natalie-o-perret/.github/.github/workflows/reusable-lint.yml@main
+    permissions:
+      pull-requests: read
