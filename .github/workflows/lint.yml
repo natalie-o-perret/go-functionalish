@@ -30,7 +30,7 @@ jobs:
         run: echo "date=$(date +%Y-W%V)" >> "$GITHUB_OUTPUT"
       - name: cache gotip SDK
         id: cache-gotip
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/sdk/gotip
           key: gotip-${{ runner.os }}-${{ steps.weekly.outputs.date }}
