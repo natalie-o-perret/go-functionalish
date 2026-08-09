@@ -21,7 +21,7 @@ jobs:
       GOTOOLCHAIN: local
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.26"
           cache: true
@@ -30,7 +30,7 @@ jobs:
         run: echo "date=$(date +%Y-W%V)" >> "$GITHUB_OUTPUT"
       - name: cache gotip SDK
         id: cache-gotip
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/sdk/gotip
           key: gotip-${{ runner.os }}-${{ steps.weekly.outputs.date }}
@@ -61,7 +61,7 @@ jobs:
       GOTOOLCHAIN: local
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.26"
           cache: true
