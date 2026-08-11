@@ -5,7 +5,7 @@
 // It provides twelve packages:
 //
 //   - [github.com/natalie-o-perret/go-functionalish/seq]: lazy Seq[T] sequence pipelines (filter, map, sort, group, zip, ...)
-//   - [github.com/natalie-o-perret/go-functionalish/taskseq]: lazy, context-aware sequences for fallible I/O
+//   - [github.com/natalie-o-perret/go-functionalish/taskseq]: lazy TaskSeq[T] pipelines for fallible I/O
 //   - [github.com/natalie-o-perret/go-functionalish/slice]: eager Slice[T] pipelines over in-memory slices
 //   - [github.com/natalie-o-perret/go-functionalish/pseq]: parallel sequence operations - Map, Filter, Reduce, GroupBy, ... using goroutine-per-chunk
 //   - [github.com/natalie-o-perret/go-functionalish/option]: Option[T] for explicit presence/absence, no nil

@@ -8,7 +8,7 @@ import (
 	"github.com/natalie-o-perret/go-functionalish/taskseq"
 )
 
-func ExampleSeq_MapAsync() {
+func ExampleTaskSeq_MapAsync() {
 	values, err := taskseq.FromSeq(slices.Values([]int{1, 2, 3, 4, 5})).
 		MapAsync(func(_ context.Context, value int) (int, error) {
 			return value * 2, nil

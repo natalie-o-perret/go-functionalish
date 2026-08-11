@@ -79,7 +79,7 @@ func TestFilterAsyncStopsAtError(t *testing.T) {
 
 func TestTakeDoesNotPullAnExtraElement(t *testing.T) {
 	pulled := 0
-	source := taskseq.Seq[int](func(_ context.Context, yield func(int) bool) error {
+	source := taskseq.TaskSeq[int](func(_ context.Context, yield func(int) bool) error {
 		for value := 1; value <= 5; value++ {
 			pulled++
 			if !yield(value) {
@@ -105,7 +105,7 @@ func TestTakeNonPositiveDoesNotConsumeSource(t *testing.T) {
 	for _, n := range []int{-1, 0} {
 		t.Run("n", func(t *testing.T) {
 			pulled := 0
-			source := taskseq.Seq[int](func(_ context.Context, _ func(int) bool) error {
+			source := taskseq.TaskSeq[int](func(_ context.Context, _ func(int) bool) error {
 				pulled++
 				return nil
 			})
@@ -127,7 +127,7 @@ func TestTakeNonPositiveDoesNotConsumeSource(t *testing.T) {
 func TestForEachStopsAtError(t *testing.T) {
 	wantErr := errors.New("action failed")
 	pulled := 0
-	source := taskseq.Seq[int](func(_ context.Context, yield func(int) bool) error {
+	source := taskseq.TaskSeq[int](func(_ context.Context, yield func(int) bool) error {
 		for value := 1; value <= 5; value++ {
 			pulled++
 			if !yield(value) {
@@ -171,7 +171,7 @@ func TestCancellationOnFinalElementIsReturned(t *testing.T) {
 func TestCancellationDoesNotPullAnotherElement(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	pulled := 0
-	source := taskseq.Seq[int](func(_ context.Context, yield func(int) bool) error {
+	source := taskseq.TaskSeq[int](func(_ context.Context, yield func(int) bool) error {
 		for value := 1; value <= 5; value++ {
 			pulled++
 			if !yield(value) {
@@ -195,7 +195,7 @@ func TestCancellationDoesNotPullAnotherElement(t *testing.T) {
 
 func TestCancellationDuringEmptySourceIsReturned(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
-	source := taskseq.Seq[int](func(_ context.Context, _ func(int) bool) error {
+	source := taskseq.TaskSeq[int](func(_ context.Context, _ func(int) bool) error {
 		cancel()
 		return nil
 	})
@@ -208,7 +208,7 @@ func TestCancellationDuringEmptySourceIsReturned(t *testing.T) {
 
 func TestCancellationDuringSourceCleanupIsReturned(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
-	source := taskseq.Seq[int](func(_ context.Context, yield func(int) bool) error {
+	source := taskseq.TaskSeq[int](func(_ context.Context, yield func(int) bool) error {
 		if !yield(1) {
 			return nil
 		}
@@ -228,7 +228,7 @@ func TestCancellationDuringSourceCleanupIsReturned(t *testing.T) {
 func TestOperationAndCleanupErrorsAreJoined(t *testing.T) {
 	operationErr := errors.New("operation failed")
 	cleanupErr := errors.New("cleanup failed")
-	source := taskseq.Seq[int](func(_ context.Context, yield func(int) bool) error {
+	source := taskseq.TaskSeq[int](func(_ context.Context, yield func(int) bool) error {
 		_ = yield(1)
 		return cleanupErr
 	})
@@ -246,7 +246,7 @@ func TestOperationAndCleanupErrorsAreJoined(t *testing.T) {
 
 func TestToSliceReturnsValuesBeforeSourceError(t *testing.T) {
 	wantErr := errors.New("source failed")
-	source := taskseq.Seq[int](func(_ context.Context, yield func(int) bool) error {
+	source := taskseq.TaskSeq[int](func(_ context.Context, yield func(int) bool) error {
 		if !yield(1) {
 			return nil
 		}

@@ -12,12 +12,12 @@ import (
 	"errors"
 )
 
-// Seq is a lazy sequence that returns a terminal error.
+// TaskSeq is a lazy sequence that returns a terminal error.
 //
 // Implementations must call yield synchronously and stop when it returns false.
 // The context is supplied when the sequence is consumed, allowing the same
 // pipeline to be reused with different deadlines.
-type Seq[T any] func(context.Context, func(T) bool) error
+type TaskSeq[T any] func(context.Context, func(T) bool) error
 
 func joinErrors(ctx context.Context, errs ...error) error {
 	err := errors.Join(errs...)
@@ -31,7 +31,7 @@ func joinErrors(ctx context.Context, errs ...error) error {
 // It accepts seq.Seq and iter.Seq values without conversion.
 // Cancellation is checked between elements; it cannot interrupt a synchronous
 // source that is blocked while producing its next element.
-func FromSeq[T any](source func(func(T) bool)) Seq[T] {
+func FromSeq[T any](source func(func(T) bool)) TaskSeq[T] {
 	return func(ctx context.Context, yield func(T) bool) error {
 		if err := context.Cause(ctx); err != nil {
 			return err
@@ -53,7 +53,7 @@ func FromSeq[T any](source func(func(T) bool)) Seq[T] {
 
 // MapAsync lazily maps each element with a context-aware operation.
 // Elements are processed sequentially and in source order.
-func (s Seq[T]) MapAsync[R any](fn func(context.Context, T) (R, error)) Seq[R] {
+func (s TaskSeq[T]) MapAsync[R any](fn func(context.Context, T) (R, error)) TaskSeq[R] {
 	return func(ctx context.Context, yield func(R) bool) error {
 		if err := context.Cause(ctx); err != nil {
 			return err
@@ -87,7 +87,7 @@ func (s Seq[T]) MapAsync[R any](fn func(context.Context, T) (R, error)) Seq[R] {
 
 // FilterAsync lazily keeps elements accepted by a context-aware predicate.
 // Elements are tested sequentially and in source order.
-func (s Seq[T]) FilterAsync(fn func(context.Context, T) (bool, error)) Seq[T] {
+func (s TaskSeq[T]) FilterAsync(fn func(context.Context, T) (bool, error)) TaskSeq[T] {
 	return func(ctx context.Context, yield func(T) bool) error {
 		if err := context.Cause(ctx); err != nil {
 			return err
@@ -124,7 +124,7 @@ func (s Seq[T]) FilterAsync(fn func(context.Context, T) (bool, error)) Seq[T] {
 
 // Take lazily yields at most the first n elements.
 // Non-positive n yields nothing without consuming the source.
-func (s Seq[T]) Take(n int) Seq[T] {
+func (s TaskSeq[T]) Take(n int) TaskSeq[T] {
 	if n <= 0 {
 		return func(ctx context.Context, _ func(T) bool) error {
 			return context.Cause(ctx)
@@ -157,7 +157,7 @@ func (s Seq[T]) Take(n int) Seq[T] {
 
 // ForEach consumes the sequence, calling fn once for each element.
 // It stops at the first source, cancellation, or callback error.
-func (s Seq[T]) ForEach(ctx context.Context, fn func(context.Context, T) error) error {
+func (s TaskSeq[T]) ForEach(ctx context.Context, fn func(context.Context, T) error) error {
 	if err := context.Cause(ctx); err != nil {
 		return err
 	}
@@ -182,7 +182,7 @@ func (s Seq[T]) ForEach(ctx context.Context, fn func(context.Context, T) error) 
 
 // ToSlice consumes the sequence and returns the values produced before any
 // error together with that error.
-func (s Seq[T]) ToSlice(ctx context.Context) ([]T, error) {
+func (s TaskSeq[T]) ToSlice(ctx context.Context) ([]T, error) {
 	var values []T
 	err := s.ForEach(ctx, func(_ context.Context, value T) error {
 		values = append(values, value)

@@ -21,7 +21,7 @@ fluent pipelines via Go 1.27 generic methods.
 | Package      | Description                                                            |
 | ------------ | ---------------------------------------------------------------------- |
 | `seq`        | Lazy `Seq[T]`: F#-style sequence pipelines with fully fluent methods   |
-| `taskseq`    | Lazy `Seq[T]`: context-aware, fallible I/O sequence pipelines          |
+| `taskseq`    | Lazy `TaskSeq[T]`: context-aware, fallible I/O sequence pipelines      |
 | `slice`      | Eager `Slice[T]`: same fluent API as `seq` over in-memory slices       |
 | `pseq`       | Parallel `Seq[T]`: goroutine-per-chunk Map, Filter, Reduce, ...        |
 | `option`     | `Option[T]`: explicit presence/absence, no nil                         |
