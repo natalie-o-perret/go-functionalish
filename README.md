@@ -21,6 +21,7 @@ fluent pipelines via Go 1.27 generic methods.
 | Package      | Description                                                            |
 | ------------ | ---------------------------------------------------------------------- |
 | `seq`        | Lazy `Seq[T]`: F#-style sequence pipelines with fully fluent methods   |
+| `taskseq`    | Lazy `TaskSeq[T]`: context-aware, fallible I/O sequence pipelines      |
 | `slice`      | Eager `Slice[T]`: same fluent API as `seq` over in-memory slices       |
 | `pseq`       | Parallel `Seq[T]`: goroutine-per-chunk Map, Filter, Reduce, ...        |
 | `option`     | `Option[T]`: explicit presence/absence, no nil                         |
@@ -37,6 +38,7 @@ fluent pipelines via Go 1.27 generic methods.
 ```go
 import (
 "github.com/natalie-o-perret/go-functionalish/seq"
+"github.com/natalie-o-perret/go-functionalish/taskseq"
 "github.com/natalie-o-perret/go-functionalish/pseq"
 "github.com/natalie-o-perret/go-functionalish/option"
 "github.com/natalie-o-perret/go-functionalish/result"
@@ -154,6 +156,24 @@ byOwner := seq.ToMapBy(seq.OfSlice(cars),
         func(c Car) int    { return c.Year },
 )
 // => map[Alice:2012 Bob:2016 ...]
+```
+
+### taskseq: context-aware sequences
+
+`taskseq` adds cancellation and fail-fast errors to lazy sequence pipelines.
+Operations are sequential and do not start goroutines.
+
+```go
+values, err := taskseq.FromSeq(seq.Range(1, 6)).
+    MapAsync(func(ctx context.Context, n int) (int, error) {
+        return n * 2, nil
+    }).
+    FilterAsync(func(ctx context.Context, n int) (bool, error) {
+        return n%4 == 0, nil
+    }).
+    Take(2).
+    ToSlice(context.Background())
+// values => [4 8]
 ```
 
 ### pseq: parallel sequences
@@ -441,8 +461,8 @@ l.Skip(2)                                              // [3 4 5]
 // Safe element access via Option
 l.At(0)       // Some(1)
 l.At(10)      // None
-l.TryHead()   // Some(1)  — use Head() for (T, bool) form
-l.TryLast()   // Some(5)  — use Last() for (T, bool) form
+l.TryHead()   // Some(1), use Head() for (T, bool) form
+l.TryLast()   // Some(5), use Last() for (T, bool) form
 
 // Type-changing methods (Go 1.27 generic methods)
 list.Of(1, 2, 3, 4, 5).
