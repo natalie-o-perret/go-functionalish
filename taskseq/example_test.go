@@ -3,13 +3,13 @@ package taskseq_test
 import (
 	"context"
 	"fmt"
+	"slices"
 
-	"github.com/natalie-o-perret/go-functionalish/seq"
 	"github.com/natalie-o-perret/go-functionalish/taskseq"
 )
 
 func ExampleSeq_MapAsync() {
-	values, err := taskseq.FromSeq(seq.Range(1, 6)).
+	values, err := taskseq.FromSeq(slices.Values([]int{1, 2, 3, 4, 5})).
 		MapAsync(func(_ context.Context, value int) (int, error) {
 			return value * 2, nil
 		}).

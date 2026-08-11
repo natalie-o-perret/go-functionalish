@@ -10,8 +10,6 @@ package taskseq
 import (
 	"context"
 	"errors"
-
-	"github.com/natalie-o-perret/go-functionalish/seq"
 )
 
 // Seq is a lazy sequence that returns a terminal error.
@@ -29,10 +27,11 @@ func joinErrors(ctx context.Context, errs ...error) error {
 	return err
 }
 
-// FromSeq lifts a synchronous [seq.Seq] into a task sequence.
+// FromSeq lifts a synchronous range-over-function sequence into a task sequence.
+// It accepts seq.Seq and iter.Seq values without conversion.
 // Cancellation is checked between elements; it cannot interrupt a synchronous
 // source that is blocked while producing its next element.
-func FromSeq[T any](source seq.Seq[T]) Seq[T] {
+func FromSeq[T any](source func(func(T) bool)) Seq[T] {
 	return func(ctx context.Context, yield func(T) bool) error {
 		if err := context.Cause(ctx); err != nil {
 			return err

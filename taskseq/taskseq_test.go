@@ -6,13 +6,12 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/natalie-o-perret/go-functionalish/seq"
 	"github.com/natalie-o-perret/go-functionalish/taskseq"
 )
 
 func TestPipelineIsLazyAndOrdered(t *testing.T) {
 	mapped := 0
-	pipeline := taskseq.FromSeq(seq.Range(1, 10)).
+	pipeline := taskseq.FromSeq(slices.Values([]int{1, 2, 3, 4, 5, 6, 7, 8, 9})).
 		MapAsync(func(_ context.Context, value int) (int, error) {
 			mapped++
 			return value * 2, nil
@@ -42,7 +41,7 @@ func TestPipelineIsLazyAndOrdered(t *testing.T) {
 
 func TestMapAsyncStopsAtError(t *testing.T) {
 	wantErr := errors.New("map failed")
-	got, err := taskseq.FromSeq(seq.Range(1, 6)).
+	got, err := taskseq.FromSeq(slices.Values([]int{1, 2, 3, 4, 5})).
 		MapAsync(func(_ context.Context, value int) (int, error) {
 			if value == 3 {
 				return 0, wantErr
@@ -61,7 +60,7 @@ func TestMapAsyncStopsAtError(t *testing.T) {
 
 func TestFilterAsyncStopsAtError(t *testing.T) {
 	wantErr := errors.New("filter failed")
-	got, err := taskseq.FromSeq(seq.Range(1, 6)).
+	got, err := taskseq.FromSeq(slices.Values([]int{1, 2, 3, 4, 5})).
 		FilterAsync(func(_ context.Context, value int) (bool, error) {
 			if value == 3 {
 				return false, wantErr
@@ -155,7 +154,7 @@ func TestForEachStopsAtError(t *testing.T) {
 func TestCancellationOnFinalElementIsReturned(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	calls := 0
-	err := taskseq.FromSeq(seq.Singleton(1)).ForEach(ctx, func(_ context.Context, _ int) error {
+	err := taskseq.FromSeq(slices.Values([]int{1})).ForEach(ctx, func(_ context.Context, _ int) error {
 		calls++
 		cancel()
 		return nil
