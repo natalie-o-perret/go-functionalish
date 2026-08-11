@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"slices"
+	"strconv"
 	"testing"
 
 	"github.com/natalie-o-perret/go-functionalish/taskseq"
@@ -103,7 +104,7 @@ func TestTakeDoesNotPullAnExtraElement(t *testing.T) {
 
 func TestTakeNonPositiveDoesNotConsumeSource(t *testing.T) {
 	for _, n := range []int{-1, 0} {
-		t.Run("n", func(t *testing.T) {
+		t.Run(strconv.Itoa(n), func(t *testing.T) {
 			pulled := 0
 			source := taskseq.TaskSeq[int](func(_ context.Context, _ func(int) bool) error {
 				pulled++
