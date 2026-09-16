@@ -10,7 +10,7 @@ on:
 
 jobs:
   analyze:
-    name: analyze (go, gotip)
+    name: analyze (go)
     runs-on: ubuntu-latest
     permissions:
       security-events: write
@@ -19,20 +19,10 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
-      - name: set up Go bootstrap
-        uses: actions/setup-go@v7
+      - uses: actions/setup-go@v7
         with:
-          go-version: "1.26"
+          go-version-file: go.mod
           cache: true
-      - name: install and build gotip
-        env:
-          GOTOOLCHAIN: local
-        run: |
-          go install golang.org/dl/gotip@latest
-          "$(go env GOPATH)/bin/gotip" download
-          GOTIP_ROOT=$("$(go env GOPATH)/bin/gotip" env GOROOT)
-          echo "GOROOT=$GOTIP_ROOT" >> "$GITHUB_ENV"
-          echo "$GOTIP_ROOT/bin" >> "$GITHUB_PATH"
       - uses: github/codeql-action/init@v4
         with:
           languages: go
