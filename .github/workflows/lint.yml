@@ -14,64 +14,27 @@ jobs:
     permissions:
       pull-requests: read
   go:
-    name: lint (gotip)
+    name: lint
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      GOTOOLCHAIN: local
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
         with:
-          go-version: "1.26"
+          go-version-file: go.mod
           cache: true
-      - name: weekly date for gotip cache
-        id: weekly
-        run: echo "date=$(date +%Y-W%V)" >> "$GITHUB_OUTPUT"
-      - name: cache gotip SDK
-        id: cache-gotip
-        uses: actions/cache@v6
-        with:
-          path: ~/sdk/gotip
-          key: gotip-${{ runner.os }}-${{ steps.weekly.outputs.date }}
-          restore-keys: gotip-${{ runner.os }}-
-      - name: install and build gotip
-        run: |
-          go install golang.org/dl/gotip@latest
-          if [ "${{ steps.cache-gotip.outputs.cache-hit }}" != "true" ]; then
-            "$(go env GOPATH)/bin/gotip" download
-          fi
-          GOTIP_ROOT=$("$(go env GOPATH)/bin/gotip" env GOROOT)
-          echo "GOROOT=$GOTIP_ROOT" >> "$GITHUB_ENV"
-          echo "$GOTIP_ROOT/bin" >> "$GITHUB_PATH"
       - uses: golangci/golangci-lint-action@v9
         with:
           version: latest
-          install-mode: goinstall
-          # staticcheck and unparam are excluded here because they rely on golang.org/x/tools/go/ssa
-          # which panics on Go 1.27 generic methods (typesinternal.ForEachElement + iter.go).
-          # Re-enable once x/tools supports Go 1.27's type iterator API.
-          args: --concurrency=1 --disable=staticcheck,unparam
-        env:
-          GOTOOLCHAIN: local
   go-mod-verify:
-    name: go mod verify (gotip)
+    name: go mod verify
     runs-on: ubuntu-latest
-    env:
-      GOTOOLCHAIN: local
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
         with:
-          go-version: "1.26"
+          go-version-file: go.mod
           cache: true
-      - name: install and build gotip
-        run: |
-          go install golang.org/dl/gotip@latest
-          "$(go env GOPATH)/bin/gotip" download
-          GOTIP_ROOT=$("$(go env GOPATH)/bin/gotip" env GOROOT)
-          echo "GOROOT=$GOTIP_ROOT" >> "$GITHUB_ENV"
-          echo "$GOTIP_ROOT/bin" >> "$GITHUB_PATH"
       - name: verify go.sum
         run: go mod verify
       - name: check go mod tidy

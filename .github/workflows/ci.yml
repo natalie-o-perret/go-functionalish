@@ -8,40 +8,15 @@ on:
 
 jobs:
   test:
-    name: test (gotip)
+    name: test
     runs-on: ubuntu-latest
-    env:
-      GOTOOLCHAIN: local
     steps:
       - uses: actions/checkout@v7
 
-      - name: set up Go bootstrap
-        uses: actions/setup-go@v7
+      - uses: actions/setup-go@v7
         with:
-          go-version: "1.26"
+          go-version-file: go.mod
           cache: true
-
-      - name: weekly date for gotip cache
-        id: weekly
-        run: echo "date=$(date +%Y-W%V)" >> "$GITHUB_OUTPUT"
-
-      - name: cache gotip SDK
-        id: cache-gotip
-        uses: actions/cache@v6
-        with:
-          path: ~/sdk/gotip
-          key: gotip-${{ runner.os }}-${{ steps.weekly.outputs.date }}
-          restore-keys: gotip-${{ runner.os }}-
-
-      - name: install and build gotip
-        run: |
-          go install golang.org/dl/gotip@latest
-          if [ "${{ steps.cache-gotip.outputs.cache-hit }}" != "true" ]; then
-            "$(go env GOPATH)/bin/gotip" download
-          fi
-          GOTIP_ROOT=$("$(go env GOPATH)/bin/gotip" env GOROOT)
-          echo "GOROOT=$GOTIP_ROOT" >> "$GITHUB_ENV"
-          echo "$GOTIP_ROOT/bin" >> "$GITHUB_PATH"
 
       - name: download deps
         run: go mod download
@@ -67,38 +42,13 @@ jobs:
   govulncheck:
     name: govulncheck
     runs-on: ubuntu-latest
-    env:
-      GOTOOLCHAIN: local
     steps:
       - uses: actions/checkout@v7
 
-      - name: set up Go bootstrap
-        uses: actions/setup-go@v7
+      - uses: actions/setup-go@v7
         with:
-          go-version: "1.26"
+          go-version-file: go.mod
           cache: true
-
-      - name: weekly date for gotip cache
-        id: weekly
-        run: echo "date=$(date +%Y-W%V)" >> "$GITHUB_OUTPUT"
-
-      - name: cache gotip SDK
-        id: cache-gotip
-        uses: actions/cache@v6
-        with:
-          path: ~/sdk/gotip
-          key: gotip-${{ runner.os }}-${{ steps.weekly.outputs.date }}
-          restore-keys: gotip-${{ runner.os }}-
-
-      - name: install and build gotip
-        run: |
-          go install golang.org/dl/gotip@latest
-          if [ "${{ steps.cache-gotip.outputs.cache-hit }}" != "true" ]; then
-            "$(go env GOPATH)/bin/gotip" download
-          fi
-          GOTIP_ROOT=$("$(go env GOPATH)/bin/gotip" env GOROOT)
-          echo "GOROOT=$GOTIP_ROOT" >> "$GITHUB_ENV"
-          echo "$GOTIP_ROOT/bin" >> "$GITHUB_PATH"
 
       - name: install govulncheck
         run: go install golang.org/x/vuln/cmd/govulncheck@latest
