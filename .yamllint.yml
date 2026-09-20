@@ -6,7 +6,7 @@ extends: default
 rules:
   # GitHub Actions values like "on:" trigger the truthy rule — allow it
   truthy:
-    allowed-values: [ "true", "false", "on", "off", "yes", "no" ]
+    allowed-values: ["true", "false", "on", "off", "yes", "no"]
     check-keys: false
 
   # Long lines are common in workflow files (run: scripts, URLs)

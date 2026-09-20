@@ -29,7 +29,7 @@ linters:
       # workflow enables by default. They surface issues that aren't
       # real problems in this project.
       disable:
-        - fieldalignment # struct field reordering rarely matters; not worth the churn
+        - fieldalignment  # struct field reordering rarely matters; not worth the churn
         - shadow         # err shadowing is fine when the inner one is scoped narrowly
     gocritic:
       enabled-tags:
@@ -37,12 +37,12 @@ linters:
         - style
         - performance
       disabled-checks:
-        - hugeParam # false-positive on generic type params
-        - rangeValCopy # false-positive on generic type params
-        - unnamedResult # naming return values is optional in Go
-        - dupSubExpr # flags intentional duplicate args in tests
-        - dupOption # flags intentional duplicate args in tests
-        - builtinShadow # conflicts with our common use of local names like "close"
+        - hugeParam  # false-positive on generic type params
+        - rangeValCopy  # false-positive on generic type params
+        - unnamedResult  # naming return values is optional in Go
+        - dupSubExpr  # flags intentional duplicate args in tests
+        - dupOption  # flags intentional duplicate args in tests
+        - builtinShadow  # conflicts with our common use of local names like "close"
     revive:
       rules:
         - name: exported
