@@ -10,6 +10,6 @@ jobs:
   build-test:
     uses: natalie-o-perret/.github/.github/workflows/reusable-build-test-go.yml@main
     with:
-      go-versions: '["1.27"]'
-      go-version-latest: "1.27"
+      go-versions: '["1.27","stable"]'
+      go-version-latest: stable
       coverage-threshold: 80
